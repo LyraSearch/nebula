@@ -1,0 +1,14 @@
+version: 0.1
+
+schema:
+  author: string
+  quote: string
+
+sharding: auto
+
+target:
+  platform: cloudflare
+  tests: true
+
+data:
+  source: ./get-data.js
