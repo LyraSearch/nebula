@@ -1,0 +1,18 @@
+version: 0.1
+
+schema:
+  definition:
+    title: string
+    year: number
+    cast:
+      director: string
+      main: string
+
+sharding: auto
+
+target:
+  platform: cloudflare
+  tests: true
+
+data:
+  source: ./get-data.mjs
