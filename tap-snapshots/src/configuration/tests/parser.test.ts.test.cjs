@@ -5,7 +5,7 @@
  * Make sure to inspect the output below.  Do not ignore changes!
  */
 'use strict'
-exports[`src/configuration/tests/parser.test.ts TAP parse Lyra in-memory configuration > parsed configuration 1`] = `
+exports['src/configuration/tests/parser.test.ts TAP parse Lyra in-memory configuration > parsed configuration 1'] = `
 Object {
   "data": Object {
     "source": "./get-data.mjs",
@@ -29,7 +29,7 @@ Object {
 }
 `
 
-exports[`src/configuration/tests/parser.test.ts TAP parse Lyra in-memory configuration > parsed configuration from default path 1`] = `
+exports['src/configuration/tests/parser.test.ts TAP parse Lyra in-memory configuration > parsed configuration from default path 1'] = `
 Object {
   "data": Object {
     "source": "./get-data.mjs",
@@ -53,7 +53,7 @@ Object {
 }
 `
 
-exports[`src/configuration/tests/parser.test.ts TAP parse Lyra in-memory configuration > parsed configuration from disk 1`] = `
+exports['src/configuration/tests/parser.test.ts TAP parse Lyra in-memory configuration > parsed configuration from disk 1'] = `
 Object {
   "data": Object {
     "source": "./get-data.mjs",

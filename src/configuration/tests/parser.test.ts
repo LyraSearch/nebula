@@ -1,5 +1,5 @@
 import t from 'tap'
-import { join } from 'path' 
+import { join } from 'path'
 import { parseLyraConfiguration } from '../parser'
 import { readFileSync, rmSync, writeFileSync } from 'fs'
 
@@ -12,13 +12,12 @@ t.test('parse Lyra in-memory configuration', t => {
 
   writeFileSync(
     tmpMockFilePath,
-    mockPathContent,
+    mockPathContent
   )
 
   const c1 = parseLyraConfiguration({ configuration: mockPathContent })
   const c2 = parseLyraConfiguration({ path: mockPath })
   const c3 = parseLyraConfiguration()
-
 
   t.matchSnapshot(c1, 'parsed configuration')
   t.matchSnapshot(c2, 'parsed configuration from disk')

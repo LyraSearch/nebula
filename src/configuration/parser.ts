@@ -4,32 +4,32 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 import * as ERRORS from '../errors'
 
-export type LyraConfigurationParams = {
+export interface LyraConfigurationParams {
   path?: string
   configuration?: string
 }
 
-type YamlVersionPlaceholder = {
+interface YamlVersionPlaceholder {
   version: string
 }
 
-function gretDefaultPath(): string {
+function gretDefaultPath (): string {
   return join(process.cwd(), 'lyra.yml')
 }
 
-function readLyraConfiguration(path = gretDefaultPath()) {
+function readLyraConfiguration (path = gretDefaultPath()) {
   return readFileSync(path, 'utf8')
 }
 
-export function parseLyraConfiguration({ path, configuration }: LyraConfigurationParams = {}): V01Configuration {
-  let conf: string;
+export function parseLyraConfiguration ({ path, configuration }: LyraConfigurationParams = {}): V01Configuration {
+  let conf: string
 
   if (!configuration) {
     conf = readLyraConfiguration(path)
   } else {
     conf = configuration
   }
- 
+
   const parsedConfig = yaml.load(conf) as YamlVersionPlaceholder
 
   if (!parsedConfig.version) {
@@ -42,4 +42,4 @@ export function parseLyraConfiguration({ path, configuration }: LyraConfiguratio
     default:
       throw new Error(ERRORS.INVALID_CONFIGURATION_VERSION(parsedConfig.version))
   }
-} 
+}

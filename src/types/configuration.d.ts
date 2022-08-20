@@ -1,6 +1,6 @@
-import { PropertiesSchema } from "@nearform/lyra"
+import { PropertiesSchema } from '@nearform/lyra'
 
-export type Platform = 
+export type Platform =
   | 'cloudflare'
 
 export type Version =
@@ -10,16 +10,16 @@ export type Sharding =
  | 'auto'
  | number
 
-export type V01Configuration = {
-  version: 0.1,
+export interface V01Configuration {
+  version: 0.1
   schema: {
     definition: PropertiesSchema
-  },
-  sharding: Sharding,
+  }
+  sharding: Sharding
   target: {
-    platform: Platform,
+    platform: Platform
     tests: boolean
-  },
+  }
   data: {
     source: string
   }
