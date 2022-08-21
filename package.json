@@ -2,13 +2,30 @@
   "name": "@lyrasearch/nebula",
   "version": "0.0.0-alpha.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
+    "changelog": "auto-changelog -p",
     "lint": "ts-standard --fix",
-    "test": "c8 -c src/tests-config/c8.json tap --rcfile=src/tests-config/tap.yml src/**/*.test.ts"
+    "test": "c8 -c src/tests-config/c8.json tap --rcfile=src/tests-config/tap.yml src/**/*.test.ts",
+    "build:node:cjs": "tsc --project tsconfig.cjs.json",
+    "build:node:module": "tsc --project tsconfig.esm.json",
+    "build": "rimraf ./dist && pnpm build:node:module && pnpm build:node:cjs"
   },
-  "keywords": [],
-  "author": "",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "keywords": [
+    "lyra",
+    "bundler",
+    "full-text search"
+  ],
+  "author": {
+    "email": "ciao@micheleriva.it",
+    "name": "Michele Riva",
+    "url": "https://github.com/MicheleRiva"
+  },
   "license": "ISC",
   "devDependencies": {
     "@babel/core": "^7.18.10",
@@ -18,10 +35,12 @@
     "@types/node": "^18.7.8",
     "@types/tap": "^15.0.7",
     "@typescript-eslint/parser": "^5.33.1",
+    "auto-changelog": "^2.4.0",
     "babel-loader": "^8.2.5",
     "c8": "^7.12.0",
     "eslint": "^8.22.0",
     "js-yaml": "^4.1.0",
+    "rimraf": "^3.0.2",
     "tap": "^16.3.0",
     "ts-node": "^10.9.1",
     "ts-standard": "^11.0.0",
@@ -32,5 +51,12 @@
     "@lyrasearch/plugin-data-persistence": "0.0.2",
     "@nearform/lyra": "^0.0.5",
     "minimist": "^1.2.6"
+  },
+  "ts-standard": {
+    "project": "./tsconfig.json",
+    "ignore": [
+      "node_modules",
+      "**/dist/**"
+    ]
   }
 }
