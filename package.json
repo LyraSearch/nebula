@@ -1,7 +1,7 @@
 {
   "name": "@lyrasearch/nebula",
   "version": "0.0.0-alpha.0",
-  "description": "",
+  "description": "Runtime-agnostic build system for Lyra",
   "scripts": {
     "changelog": "auto-changelog -p",
     "lint": "ts-standard --fix",
@@ -9,6 +9,9 @@
     "build:node:cjs": "tsc --project tsconfig.cjs.json",
     "build:node:module": "tsc --project tsconfig.esm.json",
     "build": "rimraf ./dist && pnpm build:node:module && pnpm build:node:cjs"
+  },
+  "repository": {
+    "url": "https://github.com/lyrasearch/nebula"
   },
   "files": [
     "dist"
