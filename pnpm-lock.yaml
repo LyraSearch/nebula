@@ -4,8 +4,9 @@ specifiers:
   '@babel/core': ^7.18.10
   '@babel/preset-env': ^7.18.10
   '@lyrasearch/plugin-data-persistence': 0.0.2
-  '@nearform/lyra': ^0.0.4
+  '@nearform/lyra': ^0.0.5
   '@types/js-yaml': ^4.0.5
+  '@types/minimist': ^1.2.2
   '@types/node': ^18.7.8
   '@types/tap': ^15.0.7
   '@typescript-eslint/parser': ^5.33.1
@@ -13,6 +14,7 @@ specifiers:
   c8: ^7.12.0
   eslint: ^8.22.0
   js-yaml: ^4.1.0
+  minimist: ^1.2.6
   tap: ^16.3.0
   ts-node: ^10.9.1
   ts-standard: ^11.0.0
@@ -21,12 +23,14 @@ specifiers:
 
 dependencies:
   '@lyrasearch/plugin-data-persistence': 0.0.2
-  '@nearform/lyra': 0.0.4
+  '@nearform/lyra': 0.0.5
+  minimist: 1.2.6
 
 devDependencies:
   '@babel/core': 7.18.10
   '@babel/preset-env': 7.18.10_@babel+core@7.18.10
   '@types/js-yaml': 4.0.5
+  '@types/minimist': 1.2.2
   '@types/node': 18.7.8
   '@types/tap': 15.0.7
   '@typescript-eslint/parser': 5.33.1_4rv7y5c6xz3vfxwhbrcxxi73bq
@@ -1355,6 +1359,10 @@ packages:
     resolution: {integrity: sha512-X1Z553Ku+6nBkwW3zZ6aPAFLu6MmOkysUE7WpPAJYuEE5zgDLh2pGLy4NVPeTaIg3iBJvhLX4atz/lrJwEj4rQ==}
     dev: false
 
+  /@nearform/lyra/0.0.5:
+    resolution: {integrity: sha512-VQ9JbcxFripYOoC4Ixw6q9B4eIpaw6lBXyoRCvt/qdqPt2Q2gLh0xp9mvvBzZWdC201nH9iUDNhXIgMv55BMMg==}
+    dev: false
+
   /@nodelib/fs.scandir/2.1.5:
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -1424,6 +1432,10 @@ packages:
 
   /@types/json5/0.0.29:
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
+    dev: true
+
+  /@types/minimist/1.2.2:
+    resolution: {integrity: sha512-jhuKLIRrhvCPLqwPcx6INqmKeiA5EWrsCOPhrlFSrbrmU4ZMPjj5Ul/oLCMDO98XRUIwVm78xICz4EPCektzeQ==}
     dev: true
 
   /@types/node/18.7.8:
@@ -3529,7 +3541,6 @@ packages:
 
   /minimist/1.2.6:
     resolution: {integrity: sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==}
-    dev: true
 
   /minipass/3.3.4:
     resolution: {integrity: sha512-I9WPbWHCGu8W+6k1ZiGpPu0GkoKBeorkfKNuAFBNS1HNFJvke82sxvI5bzcCNpWPorkOO5QQ+zomzzwRxejXiw==}

@@ -1,8 +1,13 @@
 version: 0.1
 
 schema:
-  author: string
-  quote: string
+  num: string
+  name: string
+  img: string
+  type: string
+  height: string
+  weight: string
+  weaknesses: string
 
 sharding: auto
 
