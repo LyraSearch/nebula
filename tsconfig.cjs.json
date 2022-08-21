@@ -6,6 +6,6 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "CommonJS",
-    "outDir": "./dist/node/cjs",
+    "outDir": "./dist/cjs",
   },
 }
