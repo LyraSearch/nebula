@@ -2,6 +2,8 @@ import type { V01Configuration } from 'types/configuration'
 import { rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import webpack from 'webpack'
+import colors from 'ansi-colors'
+import ora from 'ora'
 import { create, insert } from '@nearform/lyra/dist/cjs/lyra'
 import { exportInstance } from '@lyrasearch/plugin-data-persistence'
 import { getDataFromSource } from '../data/source'
@@ -52,10 +54,17 @@ function runWebpack(tmpFilePath: string) {
         }
       ]
     }
-  }, (err) => console.log(err))
+  }, (err) => {
+    if (err) {
+      console.error(err)
+    } else {
+      console.log(colors.green('Lyra bundle generated successfully'))
+    }
+  })
 }
 
 export async function bundle(configuration: V01Configuration) {
+  const buildingSpinner = ora('Creating an optimized bundle').start()
   const instance = await createLyraInstance(configuration)
   const serializedLyraInstance = exportInstance(instance, 'json')
   let intermediateCode: string
@@ -73,4 +82,5 @@ export async function bundle(configuration: V01Configuration) {
   writeFileSync(tmpFilePath, intermediateCode)
   runWebpack(tmpFilePath)
   rmSync(tmpFilePath)
+  buildingSpinner.stop()
 }
