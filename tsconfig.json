@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "CommonJS",
-    "lib": [
-      "ESNext",
-    ],
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "outDir": "dist",
     "esModuleInterop": true,
     "declaration": true,
     "forceConsistentCasingInFileNames": true,
@@ -14,13 +13,7 @@
     "sourceMap": true,
     "moduleResolution": "node",
     "baseUrl": ".",
-    "paths": {
-      "types/*": [
-        "./src/types/*"
-      ],
-    }
+    "useUnknownInCatchVariables": false
   },
-  "exclude": [
-    "node_modules",
-  ]
+  "include": ["src/*.ts", "src/**/*.ts"]
 }
