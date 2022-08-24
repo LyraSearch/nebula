@@ -69,7 +69,7 @@
   },
   "dependencies": {
     "@lyrasearch/plugin-data-persistence": "0.0.2",
-    "@nearform/lyra": "^0.0.5",
+    "@lyrasearch/lyra": "^0.1.1",
     "commander": "^9.4.0",
     "esbuild": "^0.15.5",
     "js-yaml": "^4.1.0",
