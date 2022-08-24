@@ -1,6 +1,6 @@
 {
   "name": "@lyrasearch/nebula",
-  "version": "0.0.4-alpha.0",
+  "version": "0.0.4-alpha.1",
   "description": "Runtime-agnostic build system for Lyra",
   "scripts": {
     "dev": "swc -s -w -d dist src",
