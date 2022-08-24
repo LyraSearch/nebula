@@ -1,15 +1,15 @@
+import { create, insert, Lyra } from '@lyrasearch/lyra'
 import { exportInstance } from '@lyrasearch/plugin-data-persistence'
-import { create, insert, Lyra } from '@nearform/lyra'
 import { build, BuildResult } from 'esbuild'
 import { copyFile, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, relative, resolve } from 'node:path'
 import ora from 'ora'
-import { parseLyraConfiguration, V01Configuration } from './configuration.js'
-import { NOT_WRITABLE, UNSUPPORTED_PLATFORM } from './errors.js'
+import { Data, parseLyraConfiguration, V01Configuration } from './configuration.js'
+import { NOT_WRITABLE, UNSUPPORTED_PLATFORM, UNSUPPORTED_SOURCE } from './errors.js'
 
 // Create a file in the same folder of the existing file with extensions cjs in order to be able to require it
-async function importCJSDataSource(absoluteSourcePath: string): Promise<any> {
+async function getDataFromCJS(absoluteSourcePath: string): Promise<any> {
   const cjsSourcePath = absoluteSourcePath + '-nebula-temp.cjs'
 
   try {
@@ -27,30 +27,43 @@ async function importCJSDataSource(absoluteSourcePath: string): Promise<any> {
   }
 }
 
-async function getDataFromSource(sourcePath: string, basePath: string): Promise<any> {
-  const absoluteSourcePath = join(basePath, sourcePath)
-  let getDynamicData
+async function getData(data: Data, basePath: string): Promise<any> {
+  // Parse
+  const absoluteSourcePath = join(basePath, data.source)
 
-  try {
-    getDynamicData = await import(absoluteSourcePath)
-  } catch (e) {
-    if (!e.message.includes('module is not defined in ES module scope')) {
-      throw e
+  switch (data.type ?? 'javascript') {
+    case 'json': {
+      const parsed = JSON.parse(await readFile(absoluteSourcePath, 'utf-8'))
+
+      return Array.isArray(parsed) ? parsed : parsed[data.configuration?.rootKey ?? 'data']
     }
+    case 'javascript': {
+      let getter
 
-    getDynamicData = await importCJSDataSource(absoluteSourcePath)
+      try {
+        getter = await import(absoluteSourcePath)
+      } catch (e) {
+        if (!e.message.includes('module is not defined in ES module scope')) {
+          throw e
+        }
+
+        getter = await getDataFromCJS(absoluteSourcePath)
+      }
+
+      if (typeof getter !== 'function' && typeof getter.default === 'function') {
+        getter = getter.default
+      }
+
+      return getter()
+    }
+    default:
+      throw new Error(UNSUPPORTED_SOURCE(data.source))
   }
-
-  if (typeof getDynamicData !== 'function' && typeof getDynamicData.default === 'function') {
-    getDynamicData = getDynamicData.default
-  }
-
-  return getDynamicData()
 }
 
 async function createLyraInstance(configuration: V01Configuration, basePath: string): Promise<Lyra<any>> {
   const lyra = create(configuration)
-  const data = await getDataFromSource(configuration.data.source, basePath)
+  const data = await getData(configuration.data, basePath)
 
   await new Promise<void>(resolve => {
     let i = 0
@@ -81,12 +94,15 @@ async function createLyraInstance(configuration: V01Configuration, basePath: str
 }
 
 function bundleCode(source: string, destination: string): Promise<BuildResult> {
+  const nebulaRoot = new URL('.', import.meta.url).pathname.replace(/\/$/, '')
+
   return build({
     entryPoints: [source],
     outfile: destination,
     bundle: true,
     platform: 'node',
-    minify: true
+    minify: true,
+    nodePaths: [resolve(nebulaRoot, '../node_modules')]
   })
 }
 
@@ -123,7 +139,7 @@ export async function bundle(ymlPath: string, _args: Record<string, any>): Promi
     await bundleCode(sourcePath, destinationPath)
     await rm(sourcePath)
 
-    buildingSpinner.succeed(`Lyra has been built into \x1b[1m${destinationPath}\x1b[0m`)
+    buildingSpinner.succeed(`Lyra has been built into \x1b[1m${relative(process.cwd(), destinationPath)}\x1b[0m`)
   } catch (e) {
     buildingSpinner?.fail(e.message)
     process.exit(1)

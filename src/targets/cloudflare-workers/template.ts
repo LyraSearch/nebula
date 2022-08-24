@@ -1,4 +1,4 @@
-import { create, load, search, SearchParams, SearchResult } from '@nearform/lyra'
+import { create, load, search, SearchParams, SearchResult } from '@lyrasearch/lyra'
 
 // @ts-expect-error
 const data = __DATA__

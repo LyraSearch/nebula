@@ -14,6 +14,10 @@ export function INVALID_CONFIGURATION_VERSION(v: string): string {
   return `Invalid configuration version: \x1b[1m${v}\x1b[0m`
 }
 
+export function UNSUPPORTED_SOURCE(source: string): string {
+  return `Unsupported data source: \x1b[1m${source}\x1b[0m`
+}
+
 export function UNSUPPORTED_PLATFORM(platform: string): string {
   return `Unsupported platform: \x1b[1m${platform}\x1b[0m`
 }

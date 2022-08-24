@@ -1,4 +1,4 @@
-import { PropertiesSchema } from '@nearform/lyra'
+import { PropertiesSchema } from '@lyrasearch/lyra'
 import yaml from 'js-yaml'
 import { readFile } from 'node:fs/promises'
 import { INVALID_CONFIGURATION_FILE, INVALID_CONFIGURATION_VERSION, UNREADABLE_CONFIGURATION_FILE } from './errors.js'
@@ -7,11 +7,24 @@ interface YamlVersionPlaceholder {
   version: string
 }
 
-export type Platform = 'cloudflare'
-
 export type Version = '0.1'
 
 export type Sharding = 'auto' | number
+
+export type DataType = 'javascript' | 'json'
+
+export type Platform = 'cloudflare'
+
+export interface Data {
+  type: DataType
+  source: string
+  configuration: Record<string, any>
+}
+
+export interface Target {
+  platform: Platform
+  configuration: Record<string, any>
+}
 
 export interface LyraConfigurationParams {
   path?: string
@@ -23,17 +36,11 @@ export interface V01Configuration {
   schema: {
     definition: PropertiesSchema
   }
-  sharding: Sharding
   outputFile: string
   outputDirectory: string
-  target: {
-    platform: Platform
-    configuration: Record<string, any>
-    tests: boolean
-  }
-  data: {
-    source: string
-  }
+  data: Data
+  target: Target
+  sharding: Sharding
 }
 
 export async function parseLyraConfiguration(ymlPath: string): Promise<V01Configuration> {
