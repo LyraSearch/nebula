@@ -1,5 +1,5 @@
 module.exports = async function getData() {
-  return require('./dataset.json').pokemon.map((pokemon) => ({
+  return require('./dataset.json').pokemon.map(pokemon => ({
     num: pokemon.num,
     name: pokemon.name,
     img: pokemon.img,

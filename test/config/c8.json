@@ -1,9 +1,6 @@
 {
   "check-coverage": true,
-  "reporter": [
-    "text",
-    "json"
-  ],
+  "reporter": ["text", "json"],
   "branches": 80,
   "functions": 80,
   "lines": 80,

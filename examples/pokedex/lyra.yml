@@ -11,8 +11,13 @@ schema:
 
 sharding: auto
 
+outputFile: pokemon.js
+outputDirectory: tmp
+
 target:
   platform: cloudflare
+  configuration:
+    workerName: pokedex
   tests: true
 
 data:
