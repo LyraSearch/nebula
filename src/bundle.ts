@@ -124,11 +124,11 @@ export async function bundle(ymlPath: string, _args: Record<string, any>): Promi
         template = await readFile(new URL('./targets/cloudflare-workers/template.js', import.meta.url), 'utf-8')
 
         if (configuration.deploy.configuration.r2) {
-          template = template.replace('__DATA__', 'await (await R2.get("data")).json()')
+          template = template.replace('__DATA_TYPE__', 'R2').replace('__DATA__', '{}')
         } else if (configuration.deploy.configuration.kv) {
-          template = template.replace('__DATA__', 'JSON.parse(await KV.get("data"))')
+          template = template.replace('__DATA_TYPE__', 'KV').replace('__DATA__', '{}')
         } else {
-          template = template.replace('__DATA__', serializedLyraInstance as string)
+          template = template.replace('__DATA_TYPE__', 'Embedded').replace('__DATA__', serializedLyraInstance as string)
         }
 
         break

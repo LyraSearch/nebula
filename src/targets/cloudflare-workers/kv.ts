@@ -51,10 +51,7 @@ async function uploadKVData(account: string, apiToken: string, namespace: string
       'PUT',
       `/accounts/${account}/storage/kv/namespaces/${namespace}/values/data`,
       'KV Upload failed',
-      data,
-      {
-        'content-type': 'application/json'
-      }
+      data
     )
   } catch (e) {
     if ('response' in e) {

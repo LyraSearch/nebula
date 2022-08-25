@@ -1,4 +1,4 @@
-import { create, load, search, SearchParams, SearchResult } from '@lyrasearch/lyra'
+import { create, load, Lyra, search, SearchParams, SearchResult } from '@lyrasearch/lyra'
 
 function parseNumber(raw: string | undefined, def: number, min: number): number {
   if (typeof raw !== 'string' || !raw.length) {
@@ -17,11 +17,28 @@ function createResponse(statusCode: number, data: unknown | undefined, error?: s
   })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function restoreKV(instance: Lyra<any>): Promise<void> {
+  // @ts-expect-error
+  load(instance, await KV.get('data'))
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function restoreR2(instance: Lyra<any>): Promise<void> {
+  // @ts-expect-error
+  const data = await R2.get('data')
+
+  load(instance, await data.json())
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function restoreEmbedded(instance: Lyra<any>): void {
+  // @ts-expect-error
+  load(instance, __DATA__)
+}
+
 async function handleSearch(request: Request): Promise<Response> {
   try {
-    // @ts-expect-error
-    const data = __DATA__
-
     const lyra = create({
       schema: {
         __placeholder: 'string'
@@ -29,7 +46,8 @@ async function handleSearch(request: Request): Promise<Response> {
       edge: true
     })
 
-    load(lyra, data)
+    // @ts-expect-error
+    await restore__DATA_TYPE__(lyra)
 
     let params: Record<string, any>
 

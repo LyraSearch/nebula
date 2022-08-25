@@ -62,7 +62,6 @@ async function uploadR2Data(
   const rawUrl = `https://${host}/${name}`
 
   const headers: IncomingHttpHeaders = {
-    'content-type': 'application/json',
     'x-amz-content-sha256': payloadHash,
     'x-amz-date': new Date()
       .toISOString()
