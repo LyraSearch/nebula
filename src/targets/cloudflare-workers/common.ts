@@ -1,6 +1,11 @@
 import { IncomingHttpHeaders } from 'node:http'
 import undici, { Dispatcher } from 'undici'
 
+export interface DeployPayload {
+  payload: Buffer
+  headers: IncomingHttpHeaders
+}
+
 export async function cloudFlareRequest(
   apiToken: string,
   method: Dispatcher.HttpMethod,

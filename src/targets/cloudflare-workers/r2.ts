@@ -1,6 +1,10 @@
+import FormData from 'form-data'
 import { createHash, createHmac } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { IncomingHttpHeaders } from 'node:http'
-import { cloudFlareRequest } from './common.js'
+import { join } from 'node:path'
+import { V01Configuration } from '../../configuration.js'
+import { cloudFlareRequest, DeployPayload } from './common.js'
 
 function sha256(contents: Buffer | string): string {
   return createHash('sha256').update(contents).digest('hex')
@@ -19,7 +23,7 @@ function encodeQueryString(raw: string): string {
     .join('&')
 }
 
-export async function ensureR2Bucket(account: string, apiToken: string, name: string): Promise<void> {
+async function ensureR2Bucket(account: string, apiToken: string, name: string): Promise<void> {
   try {
     await cloudFlareRequest(
       apiToken,
@@ -42,7 +46,7 @@ export async function ensureR2Bucket(account: string, apiToken: string, name: st
   }
 }
 
-export async function uploadR2Data(
+async function uploadR2Data(
   account: string,
   id: string,
   key: string,
@@ -103,4 +107,45 @@ export async function uploadR2Data(
     ...headers,
     authorization: `AWS4-HMAC-SHA256 Credential=${id}/${date}/${region}/${service}/aws4_request,SignedHeaders=${signedHeaders},Signature=${signature}`
   })
+}
+
+export async function deployWithR2(
+  configuration: V01Configuration,
+  account: string,
+  apiToken: string,
+  bucket: string,
+  payload: Buffer
+): Promise<DeployPayload> {
+  const r2Id = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID
+  const r2Secret = process.env.CLOUDFLARE_R2_ACCESS_KEY_SECRET
+
+  if (!r2Id || !r2Secret) {
+    throw new Error(
+      'Please provide R2 credentials in the CLOUDFLARE_R2_ACCESS_KEY_ID and CLOUDFLARE_R2_ACCESS_KEY_SECRET environment variable.'
+    )
+  }
+
+  // Ensure the bucket and upload data
+  await ensureR2Bucket(account, apiToken, bucket)
+
+  const data = await readFile(join(process.cwd(), configuration.output.directory, configuration.output.dataName))
+  await uploadR2Data(account, r2Id, r2Secret, bucket, 'data', data)
+
+  const form = new FormData()
+  form.append('worker.js', payload, { filename: 'worker.js', contentType: 'application/javascript' })
+  form.append(
+    'metadata',
+    JSON.stringify({
+      body_part: 'worker.js',
+      bindings: [
+        {
+          type: 'r2_bucket',
+          name: 'R2',
+          bucket_name: configuration.deploy.configuration.r2
+        }
+      ]
+    })
+  )
+
+  return { payload: form.getBuffer(), headers: form.getHeaders() }
 }

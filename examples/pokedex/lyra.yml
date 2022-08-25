@@ -20,3 +20,4 @@ deploy:
   platform: cloudflare
   configuration:
     workerName: pokedex
+    kv: pokedex

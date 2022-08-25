@@ -1,10 +1,10 @@
-import FormData from 'form-data'
 import { readFile } from 'node:fs/promises'
 import { IncomingHttpHeaders } from 'node:http'
-import { basename, join } from 'node:path'
+import { basename } from 'node:path'
 import { V01Configuration } from '../../configuration.js'
-import { cloudFlareRequest } from './common.js'
-import { ensureR2Bucket, uploadR2Data } from './r2.js'
+import { cloudFlareRequest, DeployPayload } from './common.js'
+import { deployWithKV } from './kv.js'
+import { deployWithR2 } from './r2.js'
 
 async function deployWorker(
   account: string,
@@ -69,7 +69,8 @@ export async function deploy(sourcePath: string, configuration: V01Configuration
   const apiToken = process.env.CLOUDFLARE_API_TOKEN
 
   const { workerName, useWorkerDomain } = configuration.deploy.configuration
-  const r2Bucket = configuration.deploy.configuration?.r2
+  const r2Bucket = configuration.deploy.configuration.r2
+  const kvNamespace = configuration.deploy.configuration.kv
 
   if (!account || !apiToken) {
     throw new Error(
@@ -77,47 +78,18 @@ export async function deploy(sourcePath: string, configuration: V01Configuration
     )
   }
 
-  let payload = await readFile(sourcePath)
-  let headers: IncomingHttpHeaders = { 'content-type': 'application/javascript' }
-
-  if (r2Bucket) {
-    const r2Id = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID
-    const r2Secret = process.env.CLOUDFLARE_R2_ACCESS_KEY_SECRET
-
-    if (!r2Id || !r2Secret) {
-      throw new Error(
-        'Please provide R2 credentials in the CLOUDFLARE_R2_ACCESS_KEY_ID and CLOUDFLARE_R2_ACCESS_KEY_SECRET environment variable.'
-      )
-    }
-
-    // Ensure the bucket and upload data
-    await ensureR2Bucket(account, apiToken, r2Bucket)
-
-    const data = await readFile(join(process.cwd(), configuration.output.directory, configuration.output.dataName))
-
-    await uploadR2Data(account, r2Id, r2Secret, r2Bucket, 'data', data)
-
-    const form = new FormData()
-    form.append('worker.js', payload, { filename: 'worker.js', contentType: 'application/javascript' })
-    form.append(
-      'metadata',
-      JSON.stringify({
-        body_part: 'worker.js',
-        bindings: [
-          {
-            type: 'r2_bucket',
-            name: 'R2',
-            bucket_name: configuration.deploy.configuration.r2
-          }
-        ]
-      })
-    )
-
-    payload = form.getBuffer()
-    headers = form.getHeaders()
+  let deployPayload: DeployPayload = {
+    payload: await readFile(sourcePath),
+    headers: { 'content-type': 'application/javascript' }
   }
 
-  await deployWorker(account, apiToken, workerName, payload, headers)
+  if (r2Bucket) {
+    deployPayload = await deployWithR2(configuration, account, apiToken, r2Bucket, deployPayload.payload)
+  } else if (kvNamespace) {
+    deployPayload = await deployWithKV(configuration, account, apiToken, kvNamespace, deployPayload.payload)
+  }
+
+  await deployWorker(account, apiToken, workerName, deployPayload.payload, deployPayload.headers)
   const domain = await getWorkersDomain(account, apiToken)
 
   if (useWorkerDomain && !(await isWorkersSudomainEnabled(account, apiToken, workerName))) {

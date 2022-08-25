@@ -125,6 +125,8 @@ export async function bundle(ymlPath: string, _args: Record<string, any>): Promi
 
         if (configuration.deploy.configuration.r2) {
           template = template.replace('__DATA__', 'await (await R2.get("data")).json()')
+        } else if (configuration.deploy.configuration.kv) {
+          template = template.replace('__DATA__', 'JSON.parse(await KV.get("data"))')
         } else {
           template = template.replace('__DATA__', serializedLyraInstance as string)
         }
@@ -141,7 +143,7 @@ export async function bundle(ymlPath: string, _args: Record<string, any>): Promi
     await bundleCode(sourcePath, destinationPath)
     await rm(sourcePath)
 
-    if (configuration.deploy.configuration.r2) {
+    if (configuration.deploy.configuration.r2 || configuration.deploy.configuration.kv) {
       await writeFile(
         join(process.cwd(), configuration.output.directory, configuration.output.dataName),
         serializedLyraInstance
