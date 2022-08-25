@@ -9,16 +9,14 @@ schema:
   weight: string
   weaknesses: string
 
-sharding: auto
+input:
+  path: ./get-data.js
 
-outputFile: pokemon.js
-outputDirectory: tmp
+output:
+  name: pokemon.js
+  directory: tmp
 
-target:
+deploy:
   platform: cloudflare
   configuration:
     workerName: pokedex
-  tests: true
-
-data:
-  source: ./get-data.js

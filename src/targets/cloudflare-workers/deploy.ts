@@ -1,54 +1,25 @@
+import FormData from 'form-data'
 import { readFile } from 'node:fs/promises'
 import { IncomingHttpHeaders } from 'node:http'
-import { basename } from 'node:path'
-import undici, { Dispatcher } from 'undici'
+import { basename, join } from 'node:path'
 import { V01Configuration } from '../../configuration.js'
+import { cloudFlareRequest } from './common.js'
+import { ensureR2Bucket, uploadR2Data } from './r2.js'
 
-async function cloudFlareRequest(
+async function deployWorker(
+  account: string,
   apiToken: string,
-  method: Dispatcher.HttpMethod,
-  path: string,
-  errorPrefix: string,
-  body?: Buffer | string,
-  headers?: IncomingHttpHeaders
-): Promise<any> {
-  const { statusCode, body: responseBody } = await undici.request(
-    `https://api.cloudflare.com/client/v4/${path.replace(/^\//, '')}`,
-    {
-      method,
-      headers: {
-        authorization: `Bearer ${apiToken}`,
-        ...headers
-      },
-      body
-    }
-  )
-
-  let data = Buffer.alloc(0)
-  for await (const chunk of responseBody) {
-    data = Buffer.concat([data, chunk])
-  }
-
-  const response = JSON.parse(data.toString('utf-8'))
-
-  if (!response.success) {
-    throw new Error(`${errorPrefix} with HTTP error ${statusCode}\n\n${JSON.stringify(response, null, 2)}`)
-  }
-
-  return response
-}
-
-async function deployWorker(account: string, apiToken: string, workerName: string, sourcePath: string): Promise<void> {
-  // Upload the script to CloudFlare
+  workerName: string,
+  payload: Buffer,
+  headers: IncomingHttpHeaders
+): Promise<void> {
   return cloudFlareRequest(
     apiToken,
     'PUT',
     `/accounts/${account}/workers/scripts/${workerName}`,
     'Deployment failed',
-    await readFile(sourcePath),
-    {
-      'content-type': 'application/javascript'
-    }
+    payload,
+    headers
   )
 }
 
@@ -88,10 +59,17 @@ async function enableWorkersSubdomain(account: string, apiToken: string, workerN
 }
 
 export async function deploy(sourcePath: string, configuration: V01Configuration): Promise<string> {
+  configuration.deploy.configuration = {
+    workerName: basename(sourcePath, '.js'),
+    useWorkerDomain: true,
+    ...configuration.deploy.configuration
+  }
+
   const account = process.env.CLOUDFLARE_ACCOUNT
   const apiToken = process.env.CLOUDFLARE_API_TOKEN
-  const workerName = configuration.target.configuration?.workerName ?? basename(sourcePath, '.js')
-  const useWorkerDomain = configuration.target.configuration?.useWorkerDomain ?? true
+
+  const { workerName, useWorkerDomain } = configuration.deploy.configuration
+  const r2Bucket = configuration.deploy.configuration?.r2
 
   if (!account || !apiToken) {
     throw new Error(
@@ -99,7 +77,47 @@ export async function deploy(sourcePath: string, configuration: V01Configuration
     )
   }
 
-  await deployWorker(account, apiToken, workerName, sourcePath)
+  let payload = await readFile(sourcePath)
+  let headers: IncomingHttpHeaders = { 'content-type': 'application/javascript' }
+
+  if (r2Bucket) {
+    const r2Id = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID
+    const r2Secret = process.env.CLOUDFLARE_R2_ACCESS_KEY_SECRET
+
+    if (!r2Id || !r2Secret) {
+      throw new Error(
+        'Please provide R2 credentials in the CLOUDFLARE_R2_ACCESS_KEY_ID and CLOUDFLARE_R2_ACCESS_KEY_SECRET environment variable.'
+      )
+    }
+
+    // Ensure the bucket and upload data
+    await ensureR2Bucket(account, apiToken, r2Bucket)
+
+    const data = await readFile(join(process.cwd(), configuration.output.directory, configuration.output.dataName))
+
+    await uploadR2Data(account, r2Id, r2Secret, r2Bucket, 'data', data)
+
+    const form = new FormData()
+    form.append('worker.js', payload, { filename: 'worker.js', contentType: 'application/javascript' })
+    form.append(
+      'metadata',
+      JSON.stringify({
+        body_part: 'worker.js',
+        bindings: [
+          {
+            type: 'r2_bucket',
+            name: 'R2',
+            bucket_name: configuration.deploy.configuration.r2
+          }
+        ]
+      })
+    )
+
+    payload = form.getBuffer()
+    headers = form.getHeaders()
+  }
+
+  await deployWorker(account, apiToken, workerName, payload, headers)
   const domain = await getWorkersDomain(account, apiToken)
 
   if (useWorkerDomain && !(await isWorkersSudomainEnabled(account, apiToken, workerName))) {

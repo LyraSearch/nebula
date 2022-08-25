@@ -5,7 +5,7 @@ import { copyFile, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, relative, resolve } from 'node:path'
 import ora from 'ora'
-import { Data, parseLyraConfiguration, V01Configuration } from './configuration.js'
+import { Input, parseLyraConfiguration, V01Configuration } from './configuration.js'
 import { NOT_WRITABLE, UNSUPPORTED_PLATFORM, UNSUPPORTED_SOURCE } from './errors.js'
 
 // Create a file in the same folder of the existing file with extensions cjs in order to be able to require it
@@ -27,9 +27,9 @@ async function getDataFromCJS(absoluteSourcePath: string): Promise<any> {
   }
 }
 
-async function getData(data: Data, basePath: string): Promise<any> {
+async function getData(data: Input, basePath: string): Promise<any> {
   // Parse
-  const absoluteSourcePath = join(basePath, data.source)
+  const absoluteSourcePath = join(basePath, data.path)
 
   switch (data.type ?? 'javascript') {
     case 'json': {
@@ -57,13 +57,13 @@ async function getData(data: Data, basePath: string): Promise<any> {
       return getter()
     }
     default:
-      throw new Error(UNSUPPORTED_SOURCE(data.source))
+      throw new Error(UNSUPPORTED_SOURCE(data.path))
   }
 }
 
 async function createLyraInstance(configuration: V01Configuration, basePath: string): Promise<Lyra<any>> {
   const lyra = create(configuration)
-  const data = await getData(configuration.data, basePath)
+  const data = await getData(configuration.input, basePath)
 
   await new Promise<void>(resolve => {
     let i = 0
@@ -117,27 +117,36 @@ export async function bundle(ymlPath: string, _args: Record<string, any>): Promi
     const instance = await createLyraInstance(configuration, dirname(ymlPath))
     const serializedLyraInstance = exportInstance(instance, 'json')
 
-    let intermediateCode: string
+    let template: string
 
-    switch (configuration.target.platform) {
+    switch (configuration.deploy.platform) {
       case 'cloudflare':
-        intermediateCode = await readFile(new URL('./targets/cloudflare-workers/template.js', import.meta.url), 'utf-8')
-        intermediateCode = intermediateCode.replace('__DATA__', serializedLyraInstance as string)
+        template = await readFile(new URL('./targets/cloudflare-workers/template.js', import.meta.url), 'utf-8')
+
+        if (configuration.deploy.configuration.r2) {
+          template = template.replace('__DATA__', 'await (await R2.get("data")).json()')
+        } else {
+          template = template.replace('__DATA__', serializedLyraInstance as string)
+        }
+
         break
       default:
-        throw new Error(UNSUPPORTED_PLATFORM(configuration.target.platform))
+        throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
     }
 
     const sourcePath = join(process.cwd(), 'nebula-bundle.tmp.js')
-    const destinationPath = join(
-      process.cwd(),
-      configuration.outputDirectory ?? 'dist',
-      configuration.outputFile ?? 'index.js'
-    )
+    const destinationPath = join(process.cwd(), configuration.output.directory, configuration.output.name)
 
-    await writeFile(sourcePath, intermediateCode)
+    await writeFile(sourcePath, template)
     await bundleCode(sourcePath, destinationPath)
     await rm(sourcePath)
+
+    if (configuration.deploy.configuration.r2) {
+      await writeFile(
+        join(process.cwd(), configuration.output.directory, configuration.output.dataName),
+        serializedLyraInstance
+      )
+    }
 
     buildingSpinner.succeed(`Lyra has been built into \x1b[1m${relative(process.cwd(), destinationPath)}\x1b[0m`)
   } catch (e) {
