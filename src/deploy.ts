@@ -19,16 +19,16 @@ export async function deploy(ymlPath: string, args: Record<string, any>): Promis
     const configuration = await parseLyraConfiguration(ymlPath)
 
     // Check that the built file exists
-    sourcePath = join(process.cwd(), configuration.outputDirectory ?? 'dist', configuration.outputFile ?? 'index.js')
+    sourcePath = join(process.cwd(), configuration.output.directory, configuration.output.name)
     await access(sourcePath, constants.R_OK)
 
     let url: string
-    switch (configuration.target.platform) {
+    switch (configuration.deploy.platform) {
       case 'cloudflare':
         url = await clouflareDeploy(sourcePath, configuration)
         break
       default:
-        throw new Error(UNSUPPORTED_PLATFORM(configuration.target.platform))
+        throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
     }
 
     buildingSpinner.succeed(`Lyra has been deployed and it is now available at \x1b[1m${url}\x1b[0m`)

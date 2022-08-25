@@ -1,54 +1,25 @@
 import { readFile } from 'node:fs/promises'
 import { IncomingHttpHeaders } from 'node:http'
 import { basename } from 'node:path'
-import undici, { Dispatcher } from 'undici'
 import { V01Configuration } from '../../configuration.js'
+import { cloudFlareRequest, DeployPayload } from './common.js'
+import { deployWithKV } from './kv.js'
+import { deployWithR2 } from './r2.js'
 
-async function cloudFlareRequest(
+async function deployWorker(
+  account: string,
   apiToken: string,
-  method: Dispatcher.HttpMethod,
-  path: string,
-  errorPrefix: string,
-  body?: Buffer | string,
-  headers?: IncomingHttpHeaders
-): Promise<any> {
-  const { statusCode, body: responseBody } = await undici.request(
-    `https://api.cloudflare.com/client/v4/${path.replace(/^\//, '')}`,
-    {
-      method,
-      headers: {
-        authorization: `Bearer ${apiToken}`,
-        ...headers
-      },
-      body
-    }
-  )
-
-  let data = Buffer.alloc(0)
-  for await (const chunk of responseBody) {
-    data = Buffer.concat([data, chunk])
-  }
-
-  const response = JSON.parse(data.toString('utf-8'))
-
-  if (!response.success) {
-    throw new Error(`${errorPrefix} with HTTP error ${statusCode}\n\n${JSON.stringify(response, null, 2)}`)
-  }
-
-  return response
-}
-
-async function deployWorker(account: string, apiToken: string, workerName: string, sourcePath: string): Promise<void> {
-  // Upload the script to CloudFlare
+  workerName: string,
+  payload: Buffer,
+  headers: IncomingHttpHeaders
+): Promise<void> {
   return cloudFlareRequest(
     apiToken,
     'PUT',
     `/accounts/${account}/workers/scripts/${workerName}`,
     'Deployment failed',
-    await readFile(sourcePath),
-    {
-      'content-type': 'application/javascript'
-    }
+    payload,
+    headers
   )
 }
 
@@ -88,10 +59,18 @@ async function enableWorkersSubdomain(account: string, apiToken: string, workerN
 }
 
 export async function deploy(sourcePath: string, configuration: V01Configuration): Promise<string> {
+  configuration.deploy.configuration = {
+    workerName: basename(sourcePath, '.js'),
+    useWorkerDomain: true,
+    ...configuration.deploy.configuration
+  }
+
   const account = process.env.CLOUDFLARE_ACCOUNT
   const apiToken = process.env.CLOUDFLARE_API_TOKEN
-  const workerName = configuration.target.configuration?.workerName ?? basename(sourcePath, '.js')
-  const useWorkerDomain = configuration.target.configuration?.useWorkerDomain ?? true
+
+  const { workerName, useWorkerDomain } = configuration.deploy.configuration
+  const r2Bucket = configuration.deploy.configuration.r2
+  const kvNamespace = configuration.deploy.configuration.kv
 
   if (!account || !apiToken) {
     throw new Error(
@@ -99,7 +78,18 @@ export async function deploy(sourcePath: string, configuration: V01Configuration
     )
   }
 
-  await deployWorker(account, apiToken, workerName, sourcePath)
+  let deployPayload: DeployPayload = {
+    payload: await readFile(sourcePath),
+    headers: { 'content-type': 'application/javascript' }
+  }
+
+  if (r2Bucket) {
+    deployPayload = await deployWithR2(configuration, account, apiToken, r2Bucket, deployPayload.payload)
+  } else if (kvNamespace) {
+    deployPayload = await deployWithKV(configuration, account, apiToken, kvNamespace, deployPayload.payload)
+  }
+
+  await deployWorker(account, apiToken, workerName, deployPayload.payload, deployPayload.headers)
   const domain = await getWorkersDomain(account, apiToken)
 
   if (useWorkerDomain && !(await isWorkersSudomainEnabled(account, apiToken, workerName))) {
