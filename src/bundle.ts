@@ -1,4 +1,4 @@
-import { create, insert, Lyra } from '@lyrasearch/lyra'
+import { create, insertBatch, Lyra } from '@lyrasearch/lyra'
 import { exportInstance } from '@lyrasearch/plugin-data-persistence'
 import { build, BuildResult } from 'esbuild'
 import { copyFile, readFile, rm, writeFile } from 'node:fs/promises'
@@ -65,30 +65,7 @@ async function createLyraInstance(configuration: V01Configuration, basePath: str
   const lyra = create(configuration)
   const data = await getData(configuration.input, basePath)
 
-  await new Promise<void>(resolve => {
-    let i = 0
-
-    function insertBatch(): void {
-      const batch = data.slice(i * 1000, (i + 1) * 1000)
-      i++
-
-      if (!batch.length) {
-        return resolve()
-      }
-
-      for (const item of batch) {
-        insert(lyra, item)
-      }
-
-      setImmediate(insertBatch)
-    }
-
-    setImmediate(insertBatch)
-  })
-
-  for (const item of data) {
-    insert(lyra, item)
-  }
+  await insertBatch(lyra, data)
 
   return lyra
 }
