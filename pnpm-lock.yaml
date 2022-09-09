@@ -1,7 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
-  '@lyrasearch/lyra': ^0.1.4
+  '@lyrasearch/lyra': ^0.2.3
   '@lyrasearch/plugin-data-persistence': 0.0.2
   '@swc/cli': ^0.1.57
   '@swc/core': ^1.2.242
@@ -33,7 +33,7 @@ specifiers:
   undici: ^5.10.0
 
 dependencies:
-  '@lyrasearch/lyra': 0.1.4
+  '@lyrasearch/lyra': 0.2.3
   '@lyrasearch/plugin-data-persistence': 0.0.2
   commander: 9.4.0
   esbuild: 0.15.5
@@ -444,8 +444,8 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.14
     dev: true
 
-  /@lyrasearch/lyra/0.1.4:
-    resolution: {integrity: sha512-g6iZP48WANSylhXrgh9fPGGCe7VXPp9cP9q/BOsawOn+GXJFRy5Ur29FdWNUTZhPCt3x24yHnB16+fMOhDRofg==}
+  /@lyrasearch/lyra/0.2.3:
+    resolution: {integrity: sha512-rKKiUBO+3Wof+xZnzPTLfJlN50YY5DMT1fwXhA1b29LD2reiC9r+RZuUqxY0o5RhpesYb7ga7voX6u1mfPhCiA==}
     dev: false
 
   /@lyrasearch/plugin-data-persistence/0.0.2:

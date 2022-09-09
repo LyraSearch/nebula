@@ -1,4 +1,5 @@
 import { PropertiesSchema } from '@lyrasearch/lyra'
+import { Language } from '@lyrasearch/lyra/dist/esm/src/tokenizer/languages.js'
 import yaml from 'js-yaml'
 import { readFile } from 'node:fs/promises'
 import {
@@ -40,6 +41,7 @@ export interface Deploy {
 
 export interface V01Configuration {
   version: 0.1
+  language: Language
   schema: {
     definition: PropertiesSchema
   }

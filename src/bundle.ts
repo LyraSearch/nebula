@@ -62,7 +62,7 @@ async function getData(data: Input, basePath: string): Promise<any> {
 }
 
 async function createLyraInstance(configuration: V01Configuration, basePath: string): Promise<Lyra<any>> {
-  const lyra = create(configuration)
+  const lyra = create({defaultLanguage: 'english', ...configuration})
   const data = await getData(configuration.input, basePath)
 
   await insertBatch(lyra, data)
