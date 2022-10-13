@@ -1,8 +1,8 @@
 lockfileVersion: 5.4
 
 specifiers:
-  '@lyrasearch/lyra': ^0.2.3
-  '@lyrasearch/plugin-data-persistence': 0.0.2
+  '@lyrasearch/lyra': ^0.2.6
+  '@lyrasearch/plugin-data-persistence': 0.0.3
   '@swc/cli': ^0.1.57
   '@swc/core': ^1.2.242
   '@types/js-yaml': ^4.0.5
@@ -33,8 +33,8 @@ specifiers:
   undici: ^5.10.0
 
 dependencies:
-  '@lyrasearch/lyra': 0.2.3
-  '@lyrasearch/plugin-data-persistence': 0.0.2
+  '@lyrasearch/lyra': 0.2.6
+  '@lyrasearch/plugin-data-persistence': 0.0.3
   commander: 9.4.0
   esbuild: 0.15.5
   form-data: 4.0.0
@@ -444,25 +444,21 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.14
     dev: true
 
-  /@lyrasearch/lyra/0.2.3:
-    resolution: {integrity: sha512-rKKiUBO+3Wof+xZnzPTLfJlN50YY5DMT1fwXhA1b29LD2reiC9r+RZuUqxY0o5RhpesYb7ga7voX6u1mfPhCiA==}
+  /@lyrasearch/lyra/0.2.6:
+    resolution: {integrity: sha512-sgqyT2vib0J1CeuqgsLU2wOdhAoVaDUu+5HmRUsLPeVMdFnOLzyf9i4iVlYktPu8XLjqHY/WRP8RBDYF2ILP4A==}
     dev: false
 
-  /@lyrasearch/plugin-data-persistence/0.0.2:
-    resolution: {integrity: sha512-eFuElby81Ha9CQ4jVBA5UGbDZf/tlkLAxr2RsAl0i9Thu07MS1VAOHWlcd7wlExKpo04f1ZvmuXSC7Yb0wZ8cg==}
+  /@lyrasearch/plugin-data-persistence/0.0.3:
+    resolution: {integrity: sha512-r2T986AhzlUXSA/PVsyzAth20N0oIcamREcKsCwRW30tI3Cvt6jtOor9VigOlEhpxGHF7uhWNz2o6thE1dYrrw==}
     dependencies:
+      '@lyrasearch/lyra': 0.2.6
       '@msgpack/msgpack': 2.7.2
-      '@nearform/lyra': 0.0.4
       dpack: 0.6.22
     dev: false
 
   /@msgpack/msgpack/2.7.2:
     resolution: {integrity: sha512-rYEi46+gIzufyYUAoHDnRzkWGxajpD9vVXFQ3g1vbjrBm6P7MBmm+s/fqPa46sxa+8FOUdEuRQKaugo5a4JWpw==}
     engines: {node: '>= 10'}
-    dev: false
-
-  /@nearform/lyra/0.0.4:
-    resolution: {integrity: sha512-X1Z553Ku+6nBkwW3zZ6aPAFLu6MmOkysUE7WpPAJYuEE5zgDLh2pGLy4NVPeTaIg3iBJvhLX4atz/lrJwEj4rQ==}
     dev: false
 
   /@nodelib/fs.scandir/2.1.5:
