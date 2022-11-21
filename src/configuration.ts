@@ -1,7 +1,9 @@
 import { PropertiesSchema } from '@lyrasearch/lyra'
 import { Language } from '@lyrasearch/lyra/dist/esm/src/tokenizer/languages.js'
+import { Command } from 'commander'
 import yaml from 'js-yaml'
 import { readFile } from 'node:fs/promises'
+import { dirname, resolve, sep } from 'node:path'
 import {
   INVALID_CONFIGURATION_FILE,
   INVALID_CONFIGURATION_VERSION,
@@ -20,7 +22,7 @@ export type Sharding = 'auto' | number
 
 export type DataType = 'javascript' | 'json'
 
-export type Platform = 'cloudflare'
+export type Platform = 'cloudflare' | 'aws-lambda'
 
 export interface Input {
   path: string
@@ -70,7 +72,20 @@ function validateV01Configuration(parsedConfig: YamlVersionPlaceholder): V01Conf
   return configuration
 }
 
-export async function parseLyraConfiguration(ymlPath: string): Promise<V01Configuration> {
+export async function parseLyraConfiguration(
+  command: Command,
+  ymlPath: string
+): Promise<[V01Configuration, string, string]> {
+  if (!ymlPath) {
+    ymlPath = 'lyra.yml'
+  }
+
+  let outputDirectory = command.optsWithGlobals().directory
+
+  if (outputDirectory === '-') {
+    outputDirectory = ymlPath.includes(sep) ? dirname(ymlPath) : ''
+  }
+
   let rawConfiguration: string
 
   try {
@@ -86,8 +101,15 @@ export async function parseLyraConfiguration(ymlPath: string): Promise<V01Config
   }
 
   switch (parseFloat(parsedConfig.version)) {
-    case 0.1:
-      return validateV01Configuration(parsedConfig)
+    case 0.1: {
+      const configuration = validateV01Configuration(parsedConfig)
+
+      return [
+        configuration,
+        (outputDirectory = resolve(...[process.cwd(), outputDirectory, configuration.output.directory].filter(s => s))),
+        resolve(process.cwd(), ymlPath)
+      ]
+    }
     default:
       throw new Error(INVALID_CONFIGURATION_VERSION(parsedConfig.version))
   }

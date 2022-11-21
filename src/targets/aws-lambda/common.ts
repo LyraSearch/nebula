@@ -1,23 +1,47 @@
 import { IncomingHttpHeaders } from 'node:http'
 import undici, { Dispatcher } from 'undici'
+import { signRequest } from '../common/aws-signing.js'
 
 export interface DeployPayload {
   payload: Buffer
   headers: IncomingHttpHeaders
 }
 
-export async function cloudFlareRequest(
+export const awsJsonContentType = 'application/x-amz-json-1.1'
+
+export function queryStringRequest(args: Record<string, string>, path: string = '/'): string {
+  return `${path}?${new URLSearchParams(args).toString()}`
+}
+
+export const lambdaExecutionRole = 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+export function functionRole(name: string): string {
+  return `${name}-role-execution`
+}
+
+export async function awsApiRequest(
   errorPrefix: string,
-  apiToken: string,
+  id: string,
+  key: string,
+  region: string,
+  service: string,
   method: Dispatcher.HttpMethod,
-  url: string,
+  path: string,
   headers: IncomingHttpHeaders = {},
   body?: Buffer | string
 ): Promise<any> {
-  // Use a default root URL
-  if (!url.startsWith('http')) {
-    url = `https://api.cloudflare.com/client/v4/${url.replace(/^\//, '')}`
+  const apiService = service
+  service = service.split('.').pop()!
+
+  const apiRegion = region === 'none' ? '' : `.${region}`
+  if (region === 'none') {
+    region = 'us-east-1'
   }
+
+  const url = `https://${apiService}${apiRegion}.amazonaws.com/${path.replace(/^\//, '')}`
+
+  // Authenticate the request
+  headers = signRequest(id, key, service, region, url, method, headers, body)
 
   // Make the request
   const {
@@ -26,10 +50,7 @@ export async function cloudFlareRequest(
     body: responseBody
   } = await undici.request(url, {
     method,
-    headers: {
-      authorization: `Bearer ${apiToken}`,
-      ...headers
-    },
+    headers,
     body
   })
 
@@ -39,12 +60,17 @@ export async function cloudFlareRequest(
     data = Buffer.concat([data, chunk])
   }
 
-  if (responseHeaders['content-type']?.startsWith('application/json')) {
+  if (
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+    responseHeaders['content-type']?.startsWith('application/json') ||
+    responseHeaders['content-type']?.startsWith(awsJsonContentType)
+  ) {
     // For JSON responses, look at the success field and ignore the statusCode
     const response = data.length > 0 ? JSON.parse(data.toString('utf-8')) : ''
 
-    if (!response.success) {
+    if (statusCode >= 400) {
       const error = new Error(`${errorPrefix} with HTTP error ${statusCode}\n\n${JSON.stringify(response, null, 2)}`)
+
       Object.defineProperty(error, 'response', {
         value: response,
         writable: false,

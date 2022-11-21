@@ -20,13 +20,13 @@ function createResponse(statusCode: number, data: unknown | undefined, error?: s
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function restoreKV(instance: Lyra<any>): Promise<void> {
   // @ts-expect-error
-  load(instance, await KV.get('data'))
+  load(instance, JSON.parse(await KV.get('data')))
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function restoreR2(instance: Lyra<any>): Promise<void> {
   // @ts-expect-error
-  const data = await R2.get('data')
+  const data = await R2.get('data.json')
 
   load(instance, await data.json())
 }

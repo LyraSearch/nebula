@@ -1,0 +1,33 @@
+FROM node:18-alpine as base
+
+ENV NODE_ENV production
+ENV LANG en_US.UTF-8
+
+RUN apk add -U \
+  autoconf \
+  automake \
+  build-base \
+  cmake \
+  curl \
+  libcurl \
+  libexecinfo-dev \ 
+  libtool \
+  make \
+  python3 \
+  unzip
+
+RUN npm install -g aws-lambda-ric
+
+# Stage two, final build
+FROM node:18-alpine as final
+LABEL org.opencontainers.image.source=https://github.com/LyraSearch/nebula
+
+# Copy Lambda Runtime
+COPY --from=base /usr/local /usr/local
+
+# Prepare the execution script
+RUN \
+  echo -e "#!/bin/sh\n\n/usr/local/bin/aws-lambda-ric \"\${NEBULA_LAMBDA_HANDLER}.handler\"" > /usr/local/bin/nebula-runtime \
+  && chmod a+x /usr/local/bin/nebula-runtime
+
+CMD /usr/local/bin/nebula-runtime
