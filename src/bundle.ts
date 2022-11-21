@@ -86,8 +86,31 @@ function bundleCode(source: string, destination: string): Promise<BuildResult> {
   })
 }
 
+export async function clean(this: Command, rawYmlPath: string, _args: Record<string, any>): Promise<void> {
+  const spinner = ora('Removing all Nebula artifacts ...').start()
+
+  try {
+    const [configuration, outputDirectory] = await parseLyraConfiguration(this, rawYmlPath)
+
+    // Create Lyra and export the data
+    const destinationPath = join(outputDirectory, configuration.output.name)
+    const dataDestinationPath = join(outputDirectory, configuration.output.dataName)
+
+    await rm(destinationPath, { force: true })
+    spinner.info(`Deleted file \x1b[1m${relative(process.cwd(), destinationPath)}\x1b[0m.`)
+
+    await rm(dataDestinationPath, { force: true })
+    spinner.info(`Deleted file \x1b[1m${relative(process.cwd(), dataDestinationPath)}\x1b[0m.`)
+
+    spinner.succeed('All artifacts have been successfully deleted!')
+  } catch (e) {
+    spinner?.fail(e.message)
+    process.exit(1)
+  }
+}
+
 export async function bundle(this: Command, rawYmlPath: string, _args: Record<string, any>): Promise<void> {
-  const spinnner = ora('Creating an optimized bundle ...').start()
+  const spinner = ora('Creating an optimized bundle ...').start()
 
   try {
     const [configuration, outputDirectory, ymlPath] = await parseLyraConfiguration(this, rawYmlPath)
@@ -120,10 +143,10 @@ export async function bundle(this: Command, rawYmlPath: string, _args: Record<st
       await writeFile(join(outputDirectory, configuration.output.dataName), serializedLyraInstance)
     }
 
-    spinnner.info(`Lyra is now bundled into \x1b[1m${relative(process.cwd(), destinationPath)}\x1b[0m`)
-    spinnner.succeed('Lyra has been built successfully!')
+    spinner.info(`Lyra is now bundled into \x1b[1m${relative(process.cwd(), destinationPath)}\x1b[0m`)
+    spinner.succeed('Lyra has been built successfully!')
   } catch (e) {
-    spinnner?.fail(e.message)
+    spinner?.fail(e.message)
     process.exit(1)
   }
 }
