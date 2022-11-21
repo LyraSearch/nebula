@@ -44,8 +44,8 @@
   ],
   "license": "ISC",
   "dependencies": {
-    "@lyrasearch/lyra": "^0.2.8",
-    "@lyrasearch/plugin-data-persistence": "0.0.3",
+    "@lyrasearch/lyra": "^0.3.1",
+    "@lyrasearch/plugin-data-persistence": "0.0.4",
     "commander": "^9.4.1",
     "esbuild": "^0.15.14",
     "form-data": "^4.0.0",

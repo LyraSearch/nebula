@@ -16,14 +16,14 @@ output:
   name: pokemon.js
   directory: tmp
 
-# deploy:
-#   platform: cloudflare
-#   configuration:
-#     workerName: pokedex
-
 deploy:
-  platform: aws-lambda
+  platform: cloudflare
   configuration:
-    function: pokedex
-    repository: lyra/nebula-pokedex
-    s3: lyra-nebula-pokedex
+    workerName: pokedex
+
+# deploy:
+#   platform: aws-lambda
+#   configuration:
+#     function: pokedex
+#     repository: lyra/nebula-pokedex
+#     s3: lyra-nebula-pokedex
