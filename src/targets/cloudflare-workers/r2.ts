@@ -1,45 +1,31 @@
 import FormData from 'form-data'
-import { createHash, createHmac } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
-import { IncomingHttpHeaders } from 'node:http'
 import { join } from 'node:path'
+import { Ora } from 'ora'
 import { V01Configuration } from '../../configuration.js'
+import { signRequest } from '../common/aws-signing.js'
 import { cloudFlareRequest, DeployPayload } from './common.js'
 
-function sha256(contents: Buffer | string): string {
-  return createHash('sha256').update(contents).digest('hex')
-}
-
-function hmacSha256(key: string | Buffer, contents: Buffer | string): Buffer {
-  return createHmac('sha256', key).update(contents).digest()
-}
-
-function encodeQueryString(raw: string): string {
-  const query = new URLSearchParams(raw)
-
-  return [...query.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-    .join('&')
-}
-
-async function ensureR2Bucket(account: string, apiToken: string, name: string): Promise<void> {
+async function ensureR2Bucket(spinner: Ora, account: string, apiToken: string, name: string): Promise<void> {
   try {
+    spinner.start(`Making sure R2 bucket \x1b[1m${name}\x1b[0m exists ...`)
+
     await cloudFlareRequest(
+      'R2 bucket creation failed',
       apiToken,
       'POST',
       `/accounts/${account}/r2/buckets`,
-      'Bucket creation failed',
-      JSON.stringify({ name }),
       {
         'content-type': 'application/json'
-      }
+      },
+      JSON.stringify({ name })
     )
+
+    spinner.succeed(`R2 bucket \x1b[1m${name}\x1b[0m successfully created ...`)
   } catch (e) {
-    if ('response' in e) {
-      if (e.response.errors?.[0]?.code === 10004) {
-        return
-      }
+    if (e.response?.errors?.[0]?.code === 10004) {
+      spinner.info(`R2 bucket \x1b[1m${name}\x1b[0m already existed ...`)
+      return
     }
 
     throw e
@@ -47,6 +33,7 @@ async function ensureR2Bucket(account: string, apiToken: string, name: string): 
 }
 
 async function uploadR2Data(
+  spinner: Ora,
   account: string,
   id: string,
   key: string,
@@ -54,66 +41,76 @@ async function uploadR2Data(
   name: string,
   data: Buffer
 ): Promise<void> {
-  // // Sign the request using AWS S3 algorithm
+  // Sign the request using AWS S3 algorithm
   const service = 's3'
   const region = 'auto'
-  const payloadHash = 'UNSIGNED-PAYLOAD'
   const host = `${bucket}.${account}.r2.cloudflarestorage.com`
   const rawUrl = `https://${host}/${name}`
 
-  const headers: IncomingHttpHeaders = {
-    'x-amz-content-sha256': payloadHash,
-    'x-amz-date': new Date()
-      .toISOString()
-      .replace(/\.\d{0,3}/, '')
-      .replace(/[:-]/g, ''),
-    host
-  }
-
-  // Create the CanonicalRequest
-  const url = new URL(rawUrl)
-  const path = encodeURIComponent(url.pathname).replaceAll('%2F', '/')
-  const canonicalRequestComponents = ['PUT', path, encodeQueryString(url.search)]
-  const signedHeadersComponents = []
-
-  const sortedHeaders = Object.entries(headers).sort((a, b) => a[0].localeCompare(b[0]))
-
-  for (const header of sortedHeaders) {
-    canonicalRequestComponents.push(`${header[0]}:${header[1]}`)
-    signedHeadersComponents.push(header[0])
-  }
-
-  const signedHeaders = signedHeadersComponents.join(';')
-
-  canonicalRequestComponents.push('', signedHeaders, payloadHash as string)
-  const canonicalRequest = canonicalRequestComponents.join('\n')
-
-  // Create the StringToSign
-  const timestamp = headers['x-amz-date'] as string
-  const date = timestamp.slice(0, 8)
-  const scope = `${date}/${region}/${service}/aws4_request`
-  const stringToSign = ['AWS4-HMAC-SHA256', timestamp, scope, sha256(canonicalRequest)].join('\n')
-
-  // Calculate signature
-  const dateKey = hmacSha256(`AWS4${key}`, date)
-  const dateRegionKey = hmacSha256(dateKey, region)
-  const dateRegionServiceKey = hmacSha256(dateRegionKey, service)
-  const signingKey = hmacSha256(dateRegionServiceKey, 'aws4_request')
-  const signature = hmacSha256(signingKey, stringToSign).toString('hex')
+  const headers = signRequest(id, key, service, region, rawUrl, 'PUT', {
+    'content-type': 'application/json'
+  })
 
   // Perform the request
-  return cloudFlareRequest('', 'PUT', rawUrl, 'Bucket upload failed', data, {
-    ...headers,
-    authorization: `AWS4-HMAC-SHA256 Credential=${id}/${date}/${region}/${service}/aws4_request,SignedHeaders=${signedHeaders},Signature=${signature}`
-  })
+  spinner.start(`Uploading file \x1b[1m${name}\x1b[0m to R2 bucket \x1b[1m${bucket}\x1b[0m.`)
+  await cloudFlareRequest('Data upload to R2 failed', '', 'PUT', rawUrl, headers, data)
+  spinner.succeed(`File \x1b[1m${name}\x1b[0m successfully uploaded to R2 bucket \x1b[1m${bucket}\x1b[0m.`)
+}
+
+export async function deleteR2Bucket(spinner: Ora, account: string, apiToken: string, name: string): Promise<void> {
+  const r2Id = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID
+  const r2Secret = process.env.CLOUDFLARE_R2_ACCESS_KEY_SECRET
+
+  if (!r2Id || !r2Secret) {
+    throw new Error(
+      'Please provide R2 credentials in the CLOUDFLARE_R2_ACCESS_KEY_ID and CLOUDFLARE_R2_ACCESS_KEY_SECRET environment variable.'
+    )
+  }
+
+  try {
+    spinner.start(`Deleting R2 bucket \x1b[1m${name}\x1b[0m ...`)
+
+    // Delete data from R2 first
+    const service = 's3'
+    const region = 'auto'
+    const host = `${name}.${account}.r2.cloudflarestorage.com`
+    const rawUrl = `https://${host}/data.json`
+
+    const headers = signRequest(r2Id, r2Secret, service, region, rawUrl, 'DELETE', {})
+
+    await cloudFlareRequest('Deleting data from R2 failed', '', 'DELETE', rawUrl, headers)
+
+    await cloudFlareRequest(
+      'R2 bucket deletion failed',
+      apiToken,
+      'DELETE',
+      `/accounts/${account}/r2/buckets/${name}`,
+      {},
+      ''
+    )
+
+    spinner.succeed(`R2 bucket \x1b[1m${name}\x1b[0m successfully deleted ...`)
+  } catch (e) {
+    if (
+      (typeof e.response === 'string' && e.response?.includes('<Code>NoSuchBucket</Code>')) ||
+      e.response?.errors?.[0]?.code === 10006
+    ) {
+      spinner.info(`R2 bucket \x1b[1m${name}\x1b[0m has been already deleted.`)
+      return
+    }
+
+    throw e
+  }
 }
 
 export async function deployWithR2(
+  spinner: Ora,
   configuration: V01Configuration,
   account: string,
   apiToken: string,
   bucket: string,
-  payload: Buffer
+  payload: Buffer,
+  rootDirectory: string
 ): Promise<DeployPayload> {
   const r2Id = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID
   const r2Secret = process.env.CLOUDFLARE_R2_ACCESS_KEY_SECRET
@@ -125,10 +122,10 @@ export async function deployWithR2(
   }
 
   // Ensure the bucket and upload data
-  await ensureR2Bucket(account, apiToken, bucket)
+  await ensureR2Bucket(spinner, account, apiToken, bucket)
 
-  const data = await readFile(join(process.cwd(), configuration.output.directory, configuration.output.dataName))
-  await uploadR2Data(account, r2Id, r2Secret, bucket, 'data', data)
+  const data = await readFile(join(rootDirectory, configuration.output.dataName))
+  await uploadR2Data(spinner, account, r2Id, r2Secret, bucket, 'data.json', data)
 
   const form = new FormData()
   form.append('worker.js', payload, { filename: 'worker.js', contentType: 'application/javascript' })

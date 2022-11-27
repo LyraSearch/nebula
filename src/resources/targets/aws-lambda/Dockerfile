@@ -1,0 +1,5 @@
+FROM ghcr.io/lyrasearch/nebula/aws-lambda-runtime
+ARG NEBULA_LAMBDA_HANDLER
+ENV NEBULA_LAMBDA_HANDLER="${NEBULA_LAMBDA_HANDLER}"
+COPY . /app
+WORKDIR /app

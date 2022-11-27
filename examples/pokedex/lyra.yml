@@ -20,3 +20,10 @@ deploy:
   platform: cloudflare
   configuration:
     workerName: pokedex
+
+# deploy:
+#   platform: aws-lambda
+#   configuration:
+#     function: pokedex
+#     repository: lyra/nebula-pokedex
+#     s3: lyra-nebula-pokedex
