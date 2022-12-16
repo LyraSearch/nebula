@@ -1,6 +1,6 @@
 import FormData from 'form-data'
 import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { resolve } from 'node:path'
 import { Ora } from 'ora'
 import { V01Configuration } from '../../configuration.js'
 import { cloudFlareRequest, DeployPayload } from './common.js'
@@ -10,7 +10,7 @@ async function ensureKVNamespace(spinner: Ora, account: string, apiToken: string
     spinner.start(`Making sure KV namespace \x1b[1m${title}\x1b[0m exists ...`)
 
     await cloudFlareRequest(
-      'KV namespace creation failed',
+      'KV namespace creation',
       apiToken,
       'POST',
       `/accounts/${account}/storage/kv/namespaces`,
@@ -20,13 +20,14 @@ async function ensureKVNamespace(spinner: Ora, account: string, apiToken: string
       JSON.stringify({ title })
     )
 
-    spinner.succeed(`KV namespace \x1b[1m${title}\x1b[0m successfully created ...`)
+    spinner.succeed(`KV namespace \x1b[1m${title}\x1b[0m successfully created.`)
   } catch (e) {
-    if (e.response?.errors?.[0]?.code !== 10014) {
-      throw e
+    if (e.response?.errors?.[0]?.code === 10014) {
+      spinner.info(`KV namespace \x1b[1m${title}\x1b[0m already existed.`)
+      return
     }
 
-    spinner.info(`KV namespace \x1b[1m${title}\x1b[0m already existed ...`)
+    throw e
   }
 }
 
@@ -34,7 +35,7 @@ async function getKVNamespaceId(spinner: Ora, account: string, apiToken: string,
   spinner.start(`Getting ID of KV namespace \x1b[1m${title}\x1b[0m ...`)
 
   const response = await cloudFlareRequest(
-    'KV namespace ID fetching failed',
+    'KV namespace ID fetching',
     apiToken,
     'GET',
     `/accounts/${account}/storage/kv/namespaces`
@@ -60,10 +61,10 @@ async function uploadKVData(
   namespace: string,
   data: Buffer
 ): Promise<void> {
-  spinner.start(`Uploading data to KV namespace \x1b[1m${namespace}\x1b[0m.`)
+  spinner.start(`Uploading data to KV namespace \x1b[1m${namespace}\x1b[0m ...`)
 
   await cloudFlareRequest(
-    'Data upload to KV failed',
+    'KV file upload',
     apiToken,
     'PUT',
     `/accounts/${account}/storage/kv/namespaces/${namespace}/values/data`,
@@ -85,7 +86,7 @@ export async function deleteKVNamespace(spinner: Ora, account: string, apiToken:
   spinner.start(`Deleting KV namespace \x1b[1m${name}\x1b[0m ...`)
 
   await cloudFlareRequest(
-    'KV namespace deletion failed',
+    'KV namespace deletion',
     apiToken,
     'DELETE',
     `/accounts/${account}/storage/kv/namespaces/${namespaceId}`,
@@ -93,7 +94,7 @@ export async function deleteKVNamespace(spinner: Ora, account: string, apiToken:
     ''
   )
 
-  spinner.succeed(`KV namespace \x1b[1m${name}\x1b[0m successfully deleted ...`)
+  spinner.succeed(`KV namespace \x1b[1m${name}\x1b[0m successfully deleted.`)
 }
 
 export async function deployWithKV(
@@ -109,7 +110,7 @@ export async function deployWithKV(
   await ensureKVNamespace(spinner, account, apiToken, namespace)
   const namespaceId = await getKVNamespaceId(spinner, account, apiToken, namespace)
 
-  const data = await readFile(join(rootDirectory, configuration.output.dataName))
+  const data = await readFile(resolve(rootDirectory, configuration.output.dataName))
   await uploadKVData(spinner, account, apiToken, namespaceId, data)
 
   const form = new FormData()

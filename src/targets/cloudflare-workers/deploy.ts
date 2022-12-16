@@ -18,7 +18,7 @@ async function createWorker(
   spinner.start(`Deploying worker \x1b[1m${workerName}\x1b[0m ...`)
 
   await cloudFlareRequest(
-    'Deployment failed',
+    'Worker deployment',
     apiToken,
     'PUT',
     `/accounts/${account}/workers/scripts/${workerName}`,
@@ -52,7 +52,7 @@ async function isWorkersSubdomainEnabled(
   spinner.start(`Checking if workers subdomain is enabled for worker \x1b[1m${workerName}\x1b[0m ...`)
 
   const response = await cloudFlareRequest(
-    'Query worker subdomain status',
+    'Querying worker subdomain status',
     apiToken,
     'GET',
     `/accounts/${account}/workers/services/${workerName}/environments/production/subdomain`
@@ -71,7 +71,7 @@ async function enableWorkersSubdomain(
   spinner.start(`Enabling subdomain for worker \x1b[1m${workerName}\x1b[0m ...`)
 
   await cloudFlareRequest(
-    'Enabling worker subdomain',
+    'Enabling subdomain for worker',
     apiToken,
     'POST',
     `/accounts/${account}/workers/services/${workerName}/environments/production/subdomain`,

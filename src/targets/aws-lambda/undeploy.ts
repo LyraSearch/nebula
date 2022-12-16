@@ -10,11 +10,11 @@ async function deleteFunctionURL(
   accessKey: string,
   region: string
 ): Promise<void> {
-  spinner.start(`Delete URL of Lambda function \x1b[1m${name}\x1b[0m ...`)
+  spinner.start(`Deleting URL of Lambda function \x1b[1m${name}\x1b[0m ...`)
 
   try {
     await awsApiRequest(
-      'Delete URL of Lambda function failed',
+      'Deleting URL of Lambda function',
       keyId,
       accessKey,
       region,
@@ -46,7 +46,7 @@ async function deleteFunction(
     spinner.start(`Deleting Lambda function \x1b[1m${name}\x1b[0m ...`)
 
     await awsApiRequest(
-      'Deleting Lambda function failed',
+      'Deleting Lambda function',
       keyId,
       accessKey,
       region,
@@ -78,7 +78,7 @@ async function deleteFunctionExecutionRole(
     spinner.start(`Deleting Lambda role \x1b[1m${role}\x1b[0m ...`)
 
     await awsApiRequest(
-      'Detaching execution role failed',
+      'Deleting Lambda role',
       keyId,
       accessKey,
       'none',
@@ -95,7 +95,7 @@ async function deleteFunctionExecutionRole(
     )
 
     await awsApiRequest(
-      'Deleting lambda role failed',
+      'Deleting lambda role',
       keyId,
       accessKey,
       'none',

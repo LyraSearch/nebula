@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { resolve } from 'node:path'
 import { Ora } from 'ora'
 import { V01Configuration } from '../../configuration.js'
 import { s3UnsignedPayloadHash } from '../common/aws-signing.js'
@@ -16,7 +16,7 @@ async function ensureS3Bucket(
     spinner.start(`Making sure S3 bucket \x1b[1m${bucket}\x1b[0m exists ...`)
 
     await awsApiRequest(
-      'S3 bucket creation failed',
+      'S3 bucket creation',
       keyId,
       accessKey,
       region,
@@ -34,10 +34,10 @@ async function ensureS3Bucket(
         </CreateBucketConfiguration>`
     )
 
-    spinner.succeed(`S3 bucket \x1b[1m${bucket}\x1b[0m successfully created ...`)
+    spinner.succeed(`S3 bucket \x1b[1m${bucket}\x1b[0m successfully created.`)
   } catch (e) {
     if (e.response?.includes('<Code>BucketAlreadyOwnedByYou</Code>')) {
-      spinner.info(`S3 bucket \x1b[1m${bucket}\x1b[0m already existed ...`)
+      spinner.info(`S3 bucket \x1b[1m${bucket}\x1b[0m already existed.`)
       return
     }
 
@@ -55,7 +55,7 @@ async function makeS3BucketNotPublic(
   spinner.start(`Making sure S3 bucket \x1b[1m${bucket}\x1b[0m is not public ...`)
 
   await awsApiRequest(
-    'Setting S3 bucket to not public failed',
+    'Setting S3 bucket to not public',
     keyId,
     accessKey,
     region,
@@ -85,10 +85,10 @@ async function uploadS3Data(
   data: Buffer
 ): Promise<void> {
   // Perform the request
-  spinner.start(`Uploading file \x1b[1m${name}\x1b[0m to S3 bucket \x1b[1m${bucket}\x1b[0m.`)
+  spinner.start(`Uploading file \x1b[1m${name}\x1b[0m to S3 bucket \x1b[1m${bucket}\x1b[0m ...`)
 
   await awsApiRequest(
-    'Data upload to S3 failed',
+    'Uploading file to S3',
     keyId,
     accessKey,
     region,
@@ -130,7 +130,7 @@ export async function enableS3BucketForRole(
   })
 
   await awsApiRequest(
-    'Enabling S3 bucket access to role failed (bucket policy)',
+    'Enabling S3 bucket access to role (bucket policy)',
     keyId,
     accessKey,
     region,
@@ -155,7 +155,7 @@ export async function deleteS3Bucket(
     spinner.start(`Deleting S3 bucket \x1b[1m${bucket}\x1b[0m ...`)
 
     await awsApiRequest(
-      'S3 file deletion failed',
+      'S3 file deletion',
       keyId,
       accessKey,
       region,
@@ -169,7 +169,7 @@ export async function deleteS3Bucket(
     )
 
     await awsApiRequest(
-      'S3 bucket deletion failed',
+      'S3 bucket deletion',
       keyId,
       accessKey,
       region,
@@ -205,6 +205,6 @@ export async function deployWithS3(
   await ensureS3Bucket(spinner, keyId, accessKey, region, bucket)
   await makeS3BucketNotPublic(spinner, keyId, accessKey, region, bucket)
 
-  const data = await readFile(join(rootDirectory, configuration.output.dataName))
+  const data = await readFile(resolve(rootDirectory, configuration.output.dataName))
   await uploadS3Data(spinner, keyId, accessKey, region, bucket, 'data.json', data)
 }

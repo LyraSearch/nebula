@@ -1,6 +1,6 @@
 import FormData from 'form-data'
 import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { resolve } from 'node:path'
 import { Ora } from 'ora'
 import { V01Configuration } from '../../configuration.js'
 import { signRequest } from '../common/aws-signing.js'
@@ -11,7 +11,7 @@ async function ensureR2Bucket(spinner: Ora, account: string, apiToken: string, n
     spinner.start(`Making sure R2 bucket \x1b[1m${name}\x1b[0m exists ...`)
 
     await cloudFlareRequest(
-      'R2 bucket creation failed',
+      'R2 bucket creation',
       apiToken,
       'POST',
       `/accounts/${account}/r2/buckets`,
@@ -21,10 +21,10 @@ async function ensureR2Bucket(spinner: Ora, account: string, apiToken: string, n
       JSON.stringify({ name })
     )
 
-    spinner.succeed(`R2 bucket \x1b[1m${name}\x1b[0m successfully created ...`)
+    spinner.succeed(`R2 bucket \x1b[1m${name}\x1b[0m successfully created.`)
   } catch (e) {
     if (e.response?.errors?.[0]?.code === 10004) {
-      spinner.info(`R2 bucket \x1b[1m${name}\x1b[0m already existed ...`)
+      spinner.info(`R2 bucket \x1b[1m${name}\x1b[0m already existed.`)
       return
     }
 
@@ -52,8 +52,8 @@ async function uploadR2Data(
   })
 
   // Perform the request
-  spinner.start(`Uploading file \x1b[1m${name}\x1b[0m to R2 bucket \x1b[1m${bucket}\x1b[0m.`)
-  await cloudFlareRequest('Data upload to R2 failed', '', 'PUT', rawUrl, headers, data)
+  spinner.start(`Uploading file \x1b[1m${name}\x1b[0m to R2 bucket \x1b[1m${bucket}\x1b[0m ...`)
+  await cloudFlareRequest('Uploading file to R2', '', 'PUT', rawUrl, headers, data)
   spinner.succeed(`File \x1b[1m${name}\x1b[0m successfully uploaded to R2 bucket \x1b[1m${bucket}\x1b[0m.`)
 }
 
@@ -78,18 +78,11 @@ export async function deleteR2Bucket(spinner: Ora, account: string, apiToken: st
 
     const headers = signRequest(r2Id, r2Secret, service, region, rawUrl, 'DELETE', {})
 
-    await cloudFlareRequest('Deleting data from R2 failed', '', 'DELETE', rawUrl, headers)
+    await cloudFlareRequest('R2 file deletion', '', 'DELETE', rawUrl, headers)
 
-    await cloudFlareRequest(
-      'R2 bucket deletion failed',
-      apiToken,
-      'DELETE',
-      `/accounts/${account}/r2/buckets/${name}`,
-      {},
-      ''
-    )
+    await cloudFlareRequest('R2 bucket deletion', apiToken, 'DELETE', `/accounts/${account}/r2/buckets/${name}`, {}, '')
 
-    spinner.succeed(`R2 bucket \x1b[1m${name}\x1b[0m successfully deleted ...`)
+    spinner.succeed(`R2 bucket \x1b[1m${name}\x1b[0m successfully deleted.`)
   } catch (e) {
     if (
       (typeof e.response === 'string' && e.response?.includes('<Code>NoSuchBucket</Code>')) ||
@@ -124,7 +117,7 @@ export async function deployWithR2(
   // Ensure the bucket and upload data
   await ensureR2Bucket(spinner, account, apiToken, bucket)
 
-  const data = await readFile(join(rootDirectory, configuration.output.dataName))
+  const data = await readFile(resolve(rootDirectory, configuration.output.dataName))
   await uploadR2Data(spinner, account, r2Id, r2Secret, bucket, 'data.json', data)
 
   const form = new FormData()

@@ -135,12 +135,12 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
       try {
         params = JSON.parse(event.body)
       } catch {
-        return createResponse(400, undefined, 'Malformed JSON request body')
+        return createResponse(400, undefined, 'Malformed JSON request body.')
       }
     }
 
     if (!params.term) {
-      return createResponse(400, undefined, 'Missing term parameter')
+      return createResponse(400, undefined, 'Missing term parameter.')
     }
 
     params.limit = parseNumber(params.limit, 10, 1)

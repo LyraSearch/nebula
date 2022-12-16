@@ -1,12 +1,13 @@
 import { Command } from 'commander'
 import { access, constants } from 'node:fs/promises'
-import { join } from 'node:path'
+import { resolve } from 'node:path'
 import ora from 'ora'
 import { bundle } from './bundle.js'
 import { parseLyraConfiguration } from './configuration.js'
 import { UNREADABLE_BUNDLE_FILE, UNSUPPORTED_PLATFORM } from './errors.js'
 import * as aws from './targets/aws-lambda/index.js'
 import * as cloudflare from './targets/cloudflare-workers/index.js'
+import * as gcp from './targets/google-cloud/index.js'
 
 export async function deploy(this: Command, rawYmlPath: string, args: Record<string, any>): Promise<void> {
   if (args.build) {
@@ -20,7 +21,7 @@ export async function deploy(this: Command, rawYmlPath: string, args: Record<str
     const [configuration, rootDirectory] = await parseLyraConfiguration(this, rawYmlPath)
 
     // Check that the built file exists
-    sourcePath = join(rootDirectory, configuration.output.name)
+    sourcePath = resolve(rootDirectory, configuration.output.name)
     await access(sourcePath, constants.R_OK)
 
     let url: string
@@ -30,6 +31,9 @@ export async function deploy(this: Command, rawYmlPath: string, args: Record<str
         break
       case 'aws-lambda':
         url = await aws.deploy(spinner, sourcePath, configuration, rootDirectory)
+        break
+      case 'google-cloud':
+        url = await gcp.deploy(spinner, sourcePath, configuration, rootDirectory)
         break
       default:
         throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
@@ -55,7 +59,7 @@ export async function undeploy(this: Command, rawYmlPath: string, args: Record<s
     const [configuration, rootDirectory] = await parseLyraConfiguration(this, rawYmlPath)
 
     // Check that the built file exists
-    sourcePath = join(rootDirectory, configuration.output.name)
+    sourcePath = resolve(rootDirectory, configuration.output.name)
     await access(sourcePath, constants.R_OK)
 
     switch (configuration.deploy.platform) {
@@ -65,6 +69,10 @@ export async function undeploy(this: Command, rawYmlPath: string, args: Record<s
       case 'aws-lambda':
         await aws.undeploy(spinner, configuration)
         break
+      case 'google-cloud':
+        await gcp.undeploy(spinner, configuration)
+        break
+
       default:
         throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
     }

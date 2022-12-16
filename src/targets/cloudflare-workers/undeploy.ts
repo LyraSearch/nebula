@@ -9,7 +9,7 @@ async function deleteWorker(spinner: Ora, account: string, apiToken: string, wor
 
   try {
     await cloudFlareRequest(
-      'Deleting worker failed',
+      'Deleting worker',
       apiToken,
       'DELETE',
       `/accounts/${account}/workers/scripts/${workerName}`,
