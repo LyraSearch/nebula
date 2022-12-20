@@ -1,14 +1,17 @@
 import { create, load, Lyra, search, SearchParams, SearchResult } from '@lyrasearch/lyra'
 import { createHash, createHmac } from 'node:crypto'
+import { IncomingHttpHeaders } from 'node:http'
 
 interface LambdaEvent {
   requestContext: {
     http: {
       method: 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'CONNECT' | 'OPTIONS' | 'TRACE' | 'PATCH'
+
       path: string
     }
   }
   queryStringParameters: Record<string, string>
+  headers: IncomingHttpHeaders
   body: string
 }
 
@@ -132,6 +135,10 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
     if (['GET', 'HEAD', 'OPTIONS'].includes(event.requestContext.http.method)) {
       params = event.queryStringParameters ?? {}
     } else {
+      if (!event.headers['content-type']?.startsWith('application/json')) {
+        return createResponse(400, undefined, 'Malformed JSON request body.')
+      }
+
       try {
         params = JSON.parse(event.body)
       } catch {

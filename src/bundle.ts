@@ -9,6 +9,7 @@ import ora from 'ora'
 import { BundledLyra, Input, parseLyraConfiguration, V01Configuration } from './configuration.js'
 import { NOT_WRITABLE, UNSUPPORTED_PLATFORM, UNSUPPORTED_SOURCE } from './errors.js'
 import * as aws from './targets/aws-lambda/index.js'
+import * as azure from './targets/azure/index.js'
 import * as cloudflare from './targets/cloudflare-workers/index.js'
 import * as gcp from './targets/google-cloud/index.js'
 
@@ -131,6 +132,9 @@ export async function bundle(this: Command, rawYmlPath: string, _args: Record<st
         break
       case 'google-cloud':
         bundle = await gcp.bundle(configuration, serializedLyraInstance)
+        break
+      case 'azure':
+        bundle = await azure.bundle(configuration, serializedLyraInstance)
         break
       default:
         throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))

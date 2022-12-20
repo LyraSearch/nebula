@@ -6,6 +6,7 @@ import { bundle } from './bundle.js'
 import { parseLyraConfiguration } from './configuration.js'
 import { UNREADABLE_BUNDLE_FILE, UNSUPPORTED_PLATFORM } from './errors.js'
 import * as aws from './targets/aws-lambda/index.js'
+import * as azure from './targets/azure/index.js'
 import * as cloudflare from './targets/cloudflare-workers/index.js'
 import * as gcp from './targets/google-cloud/index.js'
 
@@ -34,6 +35,9 @@ export async function deploy(this: Command, rawYmlPath: string, args: Record<str
         break
       case 'google-cloud':
         url = await gcp.deploy(spinner, sourcePath, configuration, rootDirectory)
+        break
+      case 'azure':
+        url = await azure.deploy(spinner, sourcePath, configuration, rootDirectory)
         break
       default:
         throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
@@ -72,7 +76,9 @@ export async function undeploy(this: Command, rawYmlPath: string, args: Record<s
       case 'google-cloud':
         await gcp.undeploy(spinner, configuration)
         break
-
+      case 'azure':
+        await azure.undeploy(spinner, configuration)
+        break
       default:
         throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
     }

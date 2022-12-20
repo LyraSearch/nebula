@@ -22,7 +22,7 @@ export type Sharding = 'auto' | number
 
 export type DataType = 'javascript' | 'json'
 
-export type Platform = 'cloudflare' | 'aws-lambda' | 'google-cloud'
+export type Platform = 'cloudflare' | 'aws-lambda' | 'google-cloud' | 'azure'
 
 export interface Input {
   path: string

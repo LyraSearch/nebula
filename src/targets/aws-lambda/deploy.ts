@@ -163,7 +163,7 @@ async function attachExecutionRole(
   )
 
   // IAM needs some time before allowing us to continue
-  await sleep(2000)
+  await sleep(5000)
 
   spinner.succeed(`Execution role \x1b[1m${executionRole}\x1b[0m successfully attached to role \x1b[1m${role}\x1b[0m.`)
 }

@@ -46,6 +46,7 @@
   "dependencies": {
     "@lyrasearch/lyra": "^0.3.1",
     "@lyrasearch/plugin-data-persistence": "0.0.4",
+    "@types/express": "^4.17.15",
     "commander": "^9.4.1",
     "esbuild": "^0.16.7",
     "form-data": "^4.0.0",
