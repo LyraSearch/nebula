@@ -1,16 +1,20 @@
 import { create, insertBatch, Lyra } from '@lyrasearch/lyra'
 import { exportInstance } from '@lyrasearch/plugin-data-persistence'
+import rollupCommonJs from '@rollup/plugin-commonjs'
+import rollupNodeResolve from '@rollup/plugin-node-resolve'
+import { transform, transformFile } from '@swc/core'
 import { Command } from 'commander'
-import { build, BuildResult } from 'esbuild'
-import { copyFile, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, relative, resolve } from 'node:path'
 import ora from 'ora'
+import { rollup } from 'rollup'
 import { BundledLyra, Input, parseLyraConfiguration, V01Configuration } from './configuration.js'
-import { NOT_WRITABLE, UNSUPPORTED_PLATFORM, UNSUPPORTED_SOURCE } from './errors.js'
+import { fatal, NOT_WRITABLE, UNSUPPORTED_PLATFORM, UNSUPPORTED_SOURCE } from './errors.js'
 import * as aws from './targets/aws-lambda/index.js'
 import * as azure from './targets/azure/index.js'
 import * as cloudflare from './targets/cloudflare-workers/index.js'
+import * as custom from './targets/custom/index.js'
 import * as gcp from './targets/google-cloud/index.js'
 
 // Create a file in the same folder of the existing file with extensions cjs in order to be able to require it
@@ -75,17 +79,37 @@ async function createLyraInstance(configuration: V01Configuration, basePath: str
   return lyra
 }
 
-function bundleCode(source: string, destination: string): Promise<BuildResult> {
-  const nebulaRoot = new URL('.', import.meta.url).pathname.replace(/\/$/, '')
-
-  return build({
-    entryPoints: [source],
-    outfile: destination,
-    bundle: true,
-    platform: 'node',
-    minify: true,
-    nodePaths: [resolve(nebulaRoot, '../node_modules')]
+async function bundleCode(source: string, destinationPath: string): Promise<void> {
+  // Transpile Typescript to Javascript
+  const transpiled = await transform(source, {
+    jsc: {
+      target: 'es2022',
+      parser: {
+        syntax: 'typescript',
+        tsx: false,
+        dynamicImport: true
+      }
+    }
   })
+
+  await writeFile(destinationPath, transpiled.code, 'utf8')
+
+  // Now bundle everything using rollup
+  const bundled = await rollup({
+    input: destinationPath,
+    plugins: [rollupNodeResolve(), rollupCommonJs()],
+    onwarn() {}
+  })
+
+  await bundled.write({
+    file: destinationPath,
+    format: 'es'
+  })
+
+  // Finally, transpile again with swc to minify
+  const minified = await transformFile(destinationPath, { jsc: { target: 'es2022' }, minify: true })
+
+  await writeFile(destinationPath, minified.code, 'utf8')
 }
 
 export async function clean(this: Command, rawYmlPath: string, _args: Record<string, any>): Promise<void> {
@@ -104,10 +128,9 @@ export async function clean(this: Command, rawYmlPath: string, _args: Record<str
     await rm(dataDestinationPath, { force: true })
     spinner.info(`Deleted file \x1b[1m${relative(process.cwd(), dataDestinationPath)}\x1b[0m.`)
 
-    spinner.succeed('All artifacts have been successfully deleted!')
+    spinner.succeed('All artifacts have been successfully deleted.')
   } catch (e) {
-    spinner?.fail(e.message)
-    process.exit(1)
+    fatal(spinner, e.message)
   }
 }
 
@@ -136,25 +159,29 @@ export async function bundle(this: Command, rawYmlPath: string, _args: Record<st
       case 'azure':
         bundle = await azure.bundle(configuration, serializedLyraInstance)
         break
+      case 'custom':
+        bundle = await custom.bundle(configuration, serializedLyraInstance)
+        break
       default:
         throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
     }
 
-    const sourcePath = resolve(process.cwd(), 'nebula-bundle.tmp.js')
     const destinationPath = resolve(outputDirectory, configuration.output.name)
 
-    await writeFile(sourcePath, bundle.template)
-    await bundleCode(sourcePath, destinationPath)
-    await rm(sourcePath)
+    await mkdir(dirname(destinationPath), { recursive: true })
+    await bundleCode(bundle.template, destinationPath)
+
+    if (bundle.afterBuild) {
+      await bundle.afterBuild(destinationPath)
+    }
 
     if (bundle.hasSeparateData) {
       await writeFile(resolve(outputDirectory, configuration.output.dataName), serializedLyraInstance)
     }
 
     spinner.info(`Lyra is now bundled into \x1b[1m${relative(process.cwd(), destinationPath)}\x1b[0m`)
-    spinner.succeed('Lyra has been built successfully!')
+    spinner.succeed('Lyra has been successfully built.')
   } catch (e) {
-    spinner?.fail(e.message)
-    process.exit(1)
+    fatal(spinner, e.message)
   }
 }
