@@ -52,7 +52,7 @@ deploy_cf: &cloudflare
 deploy_custom: &custom
   platform: custom
   configuration:
-    path: ./examples/platforms/nginx/index.js
+    path: ./examples/platforms/postgresql/index.js
 
 deploy:
   <<: *custom

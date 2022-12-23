@@ -4,6 +4,7 @@ import { Command } from 'commander'
 import yaml from 'js-yaml'
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve, sep } from 'node:path'
+import { Ora } from 'ora'
 import {
   INVALID_CONFIGURATION_FILE,
   INVALID_CONFIGURATION_VERSION,
@@ -55,7 +56,7 @@ export interface V01Configuration {
 export interface BundledLyra {
   template: string
   hasSeparateData: boolean
-  afterBuild: (path: string) => void | Promise<void>
+  afterBuild: (spinner: Ora, path: string) => void | Promise<void>
 }
 
 function validateV01Configuration(parsedConfig: YamlVersionPlaceholder): V01Configuration {

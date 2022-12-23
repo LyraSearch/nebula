@@ -1,7 +1,7 @@
 import { transformFile } from '@swc/core'
 import { readFile, writeFile } from 'node:fs/promises'
 
-async function afterBuild(path) {
+async function afterBuild(spinner, path) {
   // Nginx does not support for-of syntax, therefore we have to remove it
   const transformation = await transformFile(path, {
     jsc: { target: 'es5' },

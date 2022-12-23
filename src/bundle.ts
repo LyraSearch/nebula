@@ -172,7 +172,7 @@ export async function bundle(this: Command, rawYmlPath: string, _args: Record<st
     await bundleCode(bundle.template, destinationPath)
 
     if (bundle.afterBuild) {
-      await bundle.afterBuild(destinationPath)
+      await bundle.afterBuild(spinner, destinationPath)
     }
 
     if (bundle.hasSeparateData) {
