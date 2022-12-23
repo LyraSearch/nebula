@@ -37,9 +37,49 @@ export interface Output {
   directory: string
 }
 
+export interface AwsLambdaDeploymentConfiguration {
+  function: string
+  repository: string
+  s3?: string
+}
+
+export interface GoogleCloudDeploymentConfiguration {
+  function: string
+  bucket: string
+  project: string
+  region: string
+  separateDataObject?: boolean
+}
+
+export interface AzureDeploymentConfiguration {
+  application: string
+  function: string
+  resourceGroup: string
+  storageAccount: string
+  region: string
+  container?: string
+}
+
+export interface CloudflareDeploymentConfiguration {
+  workerName: string
+  r2?: string
+  kv?: string
+}
+
+export interface CustomDeploymentConfiguration {
+  path: string
+}
+
+export type DeploymentConfiguration =
+  | AwsLambdaDeploymentConfiguration
+  | GoogleCloudDeploymentConfiguration
+  | AzureDeploymentConfiguration
+  | CloudflareDeploymentConfiguration
+  | CustomDeploymentConfiguration
+
 export interface Deploy {
   platform: Platform
-  configuration: Record<string, any>
+  configuration: DeploymentConfiguration
 }
 
 export interface V01Configuration {
@@ -56,7 +96,7 @@ export interface V01Configuration {
 export interface BundledLyra {
   template: string
   hasSeparateData: boolean
-  afterBuild: (spinner: Ora, path: string) => void | Promise<void>
+  afterBuild?: (spinner: Ora, path: string) => void | Promise<void>
 }
 
 function validateV01Configuration(parsedConfig: YamlVersionPlaceholder): V01Configuration {

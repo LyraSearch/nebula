@@ -5,12 +5,13 @@
   "scripts": {
     "predev": "rm -rf dist && mkdir dist && cp -a src/resources dist/",
     "dev": "swc -s -w -d dist src",
-    "prebuild": "rm -rf dist && npm run lint",
+    "prebuild": "rm -rf dist && npm run typecheck && npm run lint",
     "build": "swc --delete-dir-on-start -d dist src && chmod a+x ./dist/index.js",
     "postbuild": "cp -a src/resources dist/",
     "format": "prettier -w src",
     "changelog": "auto-changelog -p",
-    "lint": "pnpm run format && eslint --ext .js,.ts src"
+    "lint": "pnpm run format && eslint --ext .js,.ts src",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "bin": {
     "nebula": "./dist/index.js"
@@ -38,7 +39,7 @@
   "contributors": [
     {
       "email": "paolo@cowtech.it",
-      "name": "Paolo Insogn",
+      "name": "Paolo Insogna",
       "url": "https://github.com/ShogunPanda"
     }
   ],
@@ -56,7 +57,7 @@
     "js-yaml": "^4.1.0",
     "jszip": "^3.10.1",
     "ora": "^6.1.2",
-    "rollup": "^3.7.5",
+    "rollup": "^3.8.1",
     "undici": "^5.12.0"
   },
   "devDependencies": {
