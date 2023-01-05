@@ -1,6 +1,6 @@
 {
   "name": "@lyrasearch/nebula",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Runtime-agnostic build system for Lyra",
   "scripts": {
     "predev": "rm -rf dist && mkdir dist && cp -a src/resources dist/",
