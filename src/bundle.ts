@@ -7,6 +7,7 @@ import { Command } from 'commander'
 import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import ora from 'ora'
 import { rollup } from 'rollup'
 import { BundledLyra, Input, parseLyraConfiguration, V01Configuration } from './configuration.js'
@@ -97,7 +98,12 @@ async function bundleCode(source: string, destinationPath: string): Promise<void
   // Now bundle everything using rollup
   const bundled = await rollup({
     input: destinationPath,
-    plugins: [rollupNodeResolve(), rollupCommonJs()],
+    plugins: [
+      rollupNodeResolve({
+        modulePaths: [fileURLToPath(new URL('../node_modules', import.meta.url))]
+      }),
+      rollupCommonJs()
+    ],
     onwarn() {}
   })
 
