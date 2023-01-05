@@ -36,4 +36,4 @@ jobs:
           version-prefix: ''
           build-command: |
             pnpm install --frozen-lockfile
-            pnpm run --enable-pre-post-scripts build
+            pnpm run build
