@@ -1,5 +1,5 @@
 import { Ora } from 'ora'
-import { V01Configuration } from '../../configuration.js'
+import { AwsLambdaDeploymentConfiguration, V01Configuration } from '../../configuration.js'
 import { awsApiRequest, functionRole, lambdaExecutionRole, queryStringRequest } from './common.js'
 import { deleteS3Bucket } from './s3.js'
 
@@ -139,8 +139,8 @@ export async function undeploy(spinner: Ora, configuration: V01Configuration): P
     throw new Error('Please provide AWS region in the AWS_REGION environment variable.')
   }
 
-  const { function: name, repository } = configuration.deploy.configuration
-  const s3Bucket = configuration.deploy.configuration.s3
+  const { function: name, repository } = configuration.deploy.configuration as AwsLambdaDeploymentConfiguration
+  const s3Bucket = (configuration.deploy.configuration as AwsLambdaDeploymentConfiguration).s3
   const dockerImage = `${accountId}.dkr.ecr.${region}.amazonaws.com/${repository}`
 
   // Delete the function URL

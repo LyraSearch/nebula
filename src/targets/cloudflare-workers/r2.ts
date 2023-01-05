@@ -2,7 +2,7 @@ import FormData from 'form-data'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { Ora } from 'ora'
-import { V01Configuration } from '../../configuration.js'
+import { CloudflareDeploymentConfiguration, V01Configuration } from '../../configuration.js'
 import { signRequest } from '../common/aws-signing.js'
 import { cloudFlareRequest, DeployPayload } from './common.js'
 
@@ -130,7 +130,7 @@ export async function deployWithR2(
         {
           type: 'r2_bucket',
           name: 'R2',
-          bucket_name: configuration.deploy.configuration.r2
+          bucket_name: (configuration.deploy.configuration as CloudflareDeploymentConfiguration).r2
         }
       ]
     })

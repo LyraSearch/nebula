@@ -1,5 +1,5 @@
 import { Ora } from 'ora'
-import { V01Configuration } from '../../configuration.js'
+import { AzureDeploymentConfiguration, V01Configuration } from '../../configuration.js'
 import { ensureAuthentication, exec } from './common.js'
 
 async function deleteStorageContainer(spinner: Ora, name: string, storageAccount: string): Promise<void> {
@@ -27,7 +27,12 @@ async function deleteFunctionApp(spinner: Ora, name: string, resourceGroup: stri
 export async function undeploy(spinner: Ora, configuration: V01Configuration): Promise<void> {
   await ensureAuthentication(spinner)
 
-  const { application: name, resourceGroup, storageAccount, container } = configuration.deploy.configuration
+  const {
+    application: name,
+    resourceGroup,
+    storageAccount,
+    container
+  } = configuration.deploy.configuration as AzureDeploymentConfiguration
 
   if (container) {
     await deleteStorageContainer(spinner, container, storageAccount)

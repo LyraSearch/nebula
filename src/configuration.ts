@@ -4,6 +4,7 @@ import { Command } from 'commander'
 import yaml from 'js-yaml'
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve, sep } from 'node:path'
+import { Ora } from 'ora'
 import {
   INVALID_CONFIGURATION_FILE,
   INVALID_CONFIGURATION_VERSION,
@@ -22,7 +23,7 @@ export type Sharding = 'auto' | number
 
 export type DataType = 'javascript' | 'json'
 
-export type Platform = 'cloudflare' | 'aws-lambda' | 'google-cloud' | 'azure'
+export type Platform = 'cloudflare' | 'aws-lambda' | 'google-cloud' | 'azure' | 'custom'
 
 export interface Input {
   path: string
@@ -36,9 +37,51 @@ export interface Output {
   directory: string
 }
 
+export interface AwsLambdaDeploymentConfiguration {
+  function: string
+  repository: string
+  s3?: string
+  cors?: Record<string, boolean | number | string[]>
+}
+
+export interface GoogleCloudDeploymentConfiguration {
+  function: string
+  bucket: string
+  project: string
+  region: string
+  separateDataObject?: boolean
+}
+
+export interface AzureDeploymentConfiguration {
+  application: string
+  function: string
+  resourceGroup: string
+  storageAccount: string
+  region: string
+  container?: string
+}
+
+export interface CloudflareDeploymentConfiguration {
+  workerName: string
+  useWorkerDomain?: boolean
+  r2?: string
+  kv?: string
+}
+
+export interface CustomDeploymentConfiguration {
+  path: string
+}
+
+export type DeploymentConfiguration =
+  | AwsLambdaDeploymentConfiguration
+  | GoogleCloudDeploymentConfiguration
+  | AzureDeploymentConfiguration
+  | CloudflareDeploymentConfiguration
+  | CustomDeploymentConfiguration
+
 export interface Deploy {
   platform: Platform
-  configuration: Record<string, any>
+  configuration: DeploymentConfiguration
 }
 
 export interface V01Configuration {
@@ -55,6 +98,7 @@ export interface V01Configuration {
 export interface BundledLyra {
   template: string
   hasSeparateData: boolean
+  afterBuild?: (spinner: Ora, path: string) => void | Promise<void>
 }
 
 function validateV01Configuration(parsedConfig: YamlVersionPlaceholder): V01Configuration {
@@ -72,7 +116,7 @@ function validateV01Configuration(parsedConfig: YamlVersionPlaceholder): V01Conf
   configuration.output = { directory: '.', name: 'lyra-bundle.js', dataName: 'data.json', ...configuration.output }
 
   // @ts-expect-error:2783
-  configuration.deploy = { platform: 'cloudflare', ...configuration.deploy }
+  configuration.deploy = { platform: '', ...configuration.deploy }
 
   return configuration
 }

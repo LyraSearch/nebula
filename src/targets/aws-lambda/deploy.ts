@@ -4,7 +4,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { Ora } from 'ora'
-import { V01Configuration } from '../../configuration.js'
+import { AwsLambdaDeploymentConfiguration, V01Configuration } from '../../configuration.js'
 import { encodeQueryStringComponent } from '../common/aws-signing.js'
 import { awsApiRequest, awsJsonContentType, functionRole, lambdaExecutionRole, queryStringRequest } from './common.js'
 import { deployWithS3, enableS3BucketForRole } from './s3.js'
@@ -386,8 +386,8 @@ export async function deploy(
     throw new Error('Please provide AWS region in the AWS_REGION environment variable.')
   }
 
-  const { function: name, repository, cors } = configuration.deploy.configuration
-  const s3Bucket = configuration.deploy.configuration.s3
+  const { function: name, repository, cors } = configuration.deploy.configuration as AwsLambdaDeploymentConfiguration
+  const s3Bucket = (configuration.deploy.configuration as AwsLambdaDeploymentConfiguration).s3
   const dockerImage = `${accountId}.dkr.ecr.${region}.amazonaws.com/${repository}`
   const dockerFile = fileURLToPath(new URL('../../resources/targets/aws-lambda/Dockerfile', import.meta.url))
 
@@ -406,7 +406,7 @@ export async function deploy(
   if (await createFunction(spinner, name, dockerImage, accountId, keyId, accessKey, region)) {
     await updateFunction(spinner, name, dockerImage, keyId, accessKey, region)
   } else {
-    await createFunctionURL(spinner, name, keyId, accessKey, region, cors)
+    await createFunctionURL(spinner, name, keyId, accessKey, region, cors ?? {})
   }
 
   if (s3Bucket) {

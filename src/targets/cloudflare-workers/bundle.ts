@@ -1,11 +1,11 @@
 import { readFile } from 'node:fs/promises'
-import { BundledLyra, V01Configuration } from '../../configuration.js'
+import { BundledLyra, CloudflareDeploymentConfiguration, V01Configuration } from '../../configuration.js'
 
 export async function bundle(
   configuration: V01Configuration,
   serializedLyraInstance: string | Buffer
 ): Promise<BundledLyra> {
-  const { r2, kv } = configuration.deploy.configuration
+  const { r2, kv } = configuration.deploy.configuration as CloudflareDeploymentConfiguration
   let template = await readFile(new URL('./template.js', import.meta.url), 'utf-8')
   let hasSeparateData = false
 

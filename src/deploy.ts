@@ -4,10 +4,11 @@ import { resolve } from 'node:path'
 import ora from 'ora'
 import { bundle } from './bundle.js'
 import { parseLyraConfiguration } from './configuration.js'
-import { UNREADABLE_BUNDLE_FILE, UNSUPPORTED_PLATFORM } from './errors.js'
+import { fatal, UNREADABLE_BUNDLE_FILE, UNSUPPORTED_PLATFORM } from './errors.js'
 import * as aws from './targets/aws-lambda/index.js'
 import * as azure from './targets/azure/index.js'
 import * as cloudflare from './targets/cloudflare-workers/index.js'
+import * as custom from './targets/custom/index.js'
 import * as gcp from './targets/google-cloud/index.js'
 
 export async function deploy(this: Command, rawYmlPath: string, args: Record<string, any>): Promise<void> {
@@ -25,7 +26,7 @@ export async function deploy(this: Command, rawYmlPath: string, args: Record<str
     sourcePath = resolve(rootDirectory, configuration.output.name)
     await access(sourcePath, constants.R_OK)
 
-    let url: string
+    let url: string | null
     switch (configuration.deploy.platform) {
       case 'cloudflare':
         url = await cloudflare.deploy(spinner, sourcePath, configuration, rootDirectory)
@@ -39,23 +40,24 @@ export async function deploy(this: Command, rawYmlPath: string, args: Record<str
       case 'azure':
         url = await azure.deploy(spinner, sourcePath, configuration, rootDirectory)
         break
+      case 'custom':
+        url = await custom.deploy(spinner, sourcePath, configuration, rootDirectory)
+        break
       default:
         throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
     }
 
-    spinner.info(`Lyra is now available at \x1b[1m${url}\x1b[0m`)
-    spinner.succeed('Lyra has been successfully deployed!')
-  } catch (e) {
-    if (e.code === 'ENOENT') {
-      spinner?.fail(UNREADABLE_BUNDLE_FILE(sourcePath!))
-    } else {
-      spinner?.fail(e.message)
+    if (url) {
+      spinner.info(`Lyra is now available at \x1b[1m${url}\x1b[0m`)
     }
-    process.exit(1)
+
+    spinner.succeed('Lyra has been successfully deployed.')
+  } catch (e) {
+    fatal(spinner, e.code === 'ENOENT' ? UNREADABLE_BUNDLE_FILE(sourcePath!) : e.message)
   }
 }
 
-export async function undeploy(this: Command, rawYmlPath: string, args: Record<string, any>): Promise<void> {
+export async function undeploy(this: Command, rawYmlPath: string): Promise<void> {
   const spinner = ora('Undeploying Lyra ...').start()
   let sourcePath: string
   try {
@@ -79,17 +81,15 @@ export async function undeploy(this: Command, rawYmlPath: string, args: Record<s
       case 'azure':
         await azure.undeploy(spinner, configuration)
         break
+      case 'custom':
+        await custom.undeploy(spinner, configuration)
+        break
       default:
         throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
     }
 
     spinner.succeed('Lyra has been successfully undeployed.')
   } catch (e) {
-    if (e.code === 'ENOENT') {
-      spinner?.fail(UNREADABLE_BUNDLE_FILE(sourcePath!))
-    } else {
-      spinner?.fail(e.message)
-    }
-    process.exit(1)
+    fatal(spinner, e.code === 'ENOENT' ? UNREADABLE_BUNDLE_FILE(sourcePath!) : e.message)
   }
 }

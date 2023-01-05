@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { Ora } from 'ora'
-import { V01Configuration } from '../../configuration.js'
+import { AzureDeploymentConfiguration, V01Configuration } from '../../configuration.js'
 import { ensureAuthentication, exec } from './common.js'
 
 const functionJsonContents = JSON.stringify({
@@ -190,7 +190,7 @@ export async function deploy(
     storageAccount,
     region,
     container
-  } = configuration.deploy.configuration
+  } = configuration.deploy.configuration as AzureDeploymentConfiguration
 
   if (container) {
     await ensureStorageContainer(spinner, container, storageAccount)
