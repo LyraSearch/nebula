@@ -4,18 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       semver:
-        description: "The semver to use"
+        description: 'The semver to use'
         required: true
-        default: "patch"
+        default: 'patch'
         type: choice
         options:
           - patch
           - minor
           - major
       tag:
-        description: "The npm tag"
+        description: 'The npm tag'
         required: false
-        default: "latest"
+        default: 'latest'
   pull_request:
     types: [closed]
 
@@ -32,7 +32,8 @@ jobs:
           optic-token: ${{ secrets[format('OPTIC_TOKEN_{0}', github.actor)] || secrets.OPTIC_TOKEN }}
           semver: ${{ github.event.inputs.semver }}
           npm-tag: ${{ github.event.inputs.tag }}
-          commit-message: "chore: release {version}"
-          version-prefix: ""
+          commit-message: 'chore: release {version}'
+          version-prefix: ''
           build-command: |
             pnpm install --frozen-lockfile
+            pnpm run --enable-pre-post-scripts build
