@@ -18,7 +18,7 @@ async function execute(command: string): Promise<void> {
     const { code, stdout, stderr } = e
 
     e.cause = e
-    e.message = `Execution failed with exit code ${code} and following output:\n\n$--- STDOUT ---${stdout}\n\n--- STDERR ---${stderr}:`
+    e.message = `Execution with exit code ${code} and following output:\n\n$--- STDOUT ---${stdout}\n\n--- STDERR ---${stderr}:`
 
     throw e
   }
@@ -71,7 +71,7 @@ async function createECRRepository(
     spinner.start(`Creating ECR repository \x1b[1m${repository}\x1b[0m ...`)
 
     await awsApiRequest(
-      'Creating ECR repository failed',
+      'Creating ECR repository',
       keyId,
       accessKey,
       region,
@@ -85,10 +85,10 @@ async function createECRRepository(
       JSON.stringify({ repositoryName: repository })
     )
 
-    spinner.succeed(`Repository \x1b[1m${repository}\x1b[0m successfully created.`)
+    spinner.succeed(`ECR Repository \x1b[1m${repository}\x1b[0m successfully created.`)
   } catch (e) {
     if (e.response?.__type === 'RepositoryAlreadyExistsException') {
-      spinner.info(`Repository \x1b[1m${repository}\x1b[0m already existed.`)
+      spinner.info(`ECR Repository \x1b[1m${repository}\x1b[0m already existed.`)
       return
     }
 
@@ -114,7 +114,7 @@ async function createLambdaRole(spinner: Ora, role: string, keyId: string, acces
 
   try {
     await awsApiRequest(
-      'Creating lambda role failed',
+      'Creating lambda role',
       keyId,
       accessKey,
       'none',
@@ -130,10 +130,10 @@ async function createLambdaRole(spinner: Ora, role: string, keyId: string, acces
       ''
     )
 
-    spinner.succeed(`Role \x1b[1m${role}\x1b[0m successfully created.`)
+    spinner.succeed(`Lambda Role \x1b[1m${role}\x1b[0m successfully created.`)
   } catch (e) {
     if (e.response?.includes('<Code>EntityAlreadyExists</Code>')) {
-      spinner.info(`Role \x1b[1m${role}\x1b[0m already existed.`)
+      spinner.info(`Lambda Role \x1b[1m${role}\x1b[0m already existed.`)
       return
     }
 
@@ -151,7 +151,7 @@ async function attachExecutionRole(
   spinner.start(`Attaching execution role \x1b[${executionRole}\x1b[0m to role \x1b[1m${role}\x1b[0m ...`)
 
   await awsApiRequest(
-    'Attaching execution role failed',
+    'Attaching execution role',
     keyId,
     accessKey,
     'none',
@@ -163,7 +163,7 @@ async function attachExecutionRole(
   )
 
   // IAM needs some time before allowing us to continue
-  await sleep(2000)
+  await sleep(5000)
 
   spinner.succeed(`Execution role \x1b[1m${executionRole}\x1b[0m successfully attached to role \x1b[1m${role}\x1b[0m.`)
 }
@@ -198,7 +198,7 @@ async function createFunction(
     spinner.start(`Creating Lambda function \x1b[1m${name}\x1b[0m ...`)
 
     await awsApiRequest(
-      'Creating Lambda function failed',
+      'Creating Lambda function',
       keyId,
       accessKey,
       region,
@@ -240,7 +240,7 @@ async function updateFunction(
   spinner.start(`Updating Lambda function \x1b[1m${name}\x1b[0m ...`)
 
   await awsApiRequest(
-    'Updating Lambda function failed',
+    'Updating Lambda function',
     keyId,
     accessKey,
     region,
@@ -267,7 +267,7 @@ async function makeFunctionURLPublic(
 
   try {
     await awsApiRequest(
-      'Make Lambda function URL public failed',
+      'Making Lambda function URL public',
       keyId,
       accessKey,
       region,
@@ -306,11 +306,11 @@ async function createFunctionURL(
 ): Promise<void> {
   spinner.info(`Setting up URL invocation for Lambda function \x1b[1m${name}\x1b[0m ...`)
   spinner.indent += 4
-  spinner.start(`Creating URL Lambda function \x1b[1m${name}\x1b[0m ...`)
+  spinner.start(`Creating URL for Lambda function \x1b[1m${name}\x1b[0m ...`)
 
   try {
     await awsApiRequest(
-      'Creating URL for Lambda function failed',
+      'Creating URL for Lambda function',
       keyId,
       accessKey,
       region,
@@ -347,7 +347,7 @@ async function getFunctionURL(
   spinner.start(`Obtaining URL of Lambda function \x1b[1m${name}\x1b[0m ...`)
 
   const response = await awsApiRequest(
-    'Obtaining URL of Lambda function failed',
+    'Obtaining URL of Lambda function',
     keyId,
     accessKey,
     region,

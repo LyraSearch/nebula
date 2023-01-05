@@ -4,12 +4,14 @@ import { Command } from 'commander'
 import { build, BuildResult } from 'esbuild'
 import { copyFile, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, relative, resolve } from 'node:path'
 import ora from 'ora'
-import { Input, parseLyraConfiguration, V01Configuration } from './configuration.js'
+import { BundledLyra, Input, parseLyraConfiguration, V01Configuration } from './configuration.js'
 import { NOT_WRITABLE, UNSUPPORTED_PLATFORM, UNSUPPORTED_SOURCE } from './errors.js'
 import * as aws from './targets/aws-lambda/index.js'
+import * as azure from './targets/azure/index.js'
 import * as cloudflare from './targets/cloudflare-workers/index.js'
+import * as gcp from './targets/google-cloud/index.js'
 
 // Create a file in the same folder of the existing file with extensions cjs in order to be able to require it
 async function getDataFromCJS(absoluteSourcePath: string): Promise<any> {
@@ -32,7 +34,7 @@ async function getDataFromCJS(absoluteSourcePath: string): Promise<any> {
 
 async function getData(data: Input, basePath: string): Promise<any> {
   // Parse
-  const absoluteSourcePath = join(basePath, data.path)
+  const absoluteSourcePath = resolve(basePath, data.path)
 
   switch (data.type ?? 'javascript') {
     case 'json': {
@@ -93,8 +95,8 @@ export async function clean(this: Command, rawYmlPath: string, _args: Record<str
     const [configuration, outputDirectory] = await parseLyraConfiguration(this, rawYmlPath)
 
     // Create Lyra and export the data
-    const destinationPath = join(outputDirectory, configuration.output.name)
-    const dataDestinationPath = join(outputDirectory, configuration.output.dataName)
+    const destinationPath = resolve(outputDirectory, configuration.output.name)
+    const dataDestinationPath = resolve(outputDirectory, configuration.output.dataName)
 
     await rm(destinationPath, { force: true })
     spinner.info(`Deleted file \x1b[1m${relative(process.cwd(), destinationPath)}\x1b[0m.`)
@@ -119,28 +121,34 @@ export async function bundle(this: Command, rawYmlPath: string, _args: Record<st
     const instance = await createLyraInstance(configuration, dirname(ymlPath))
     const serializedLyraInstance = exportInstance(instance, 'json')
 
-    let template: string
+    let bundle: BundledLyra
 
     switch (configuration.deploy.platform) {
       case 'cloudflare':
-        template = await cloudflare.bundle(configuration, serializedLyraInstance)
+        bundle = await cloudflare.bundle(configuration, serializedLyraInstance)
         break
       case 'aws-lambda':
-        template = await aws.bundle(configuration, serializedLyraInstance)
+        bundle = await aws.bundle(configuration, serializedLyraInstance)
+        break
+      case 'google-cloud':
+        bundle = await gcp.bundle(configuration, serializedLyraInstance)
+        break
+      case 'azure':
+        bundle = await azure.bundle(configuration, serializedLyraInstance)
         break
       default:
         throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
     }
 
-    const sourcePath = join(process.cwd(), 'nebula-bundle.tmp.js')
-    const destinationPath = join(outputDirectory, configuration.output.name)
+    const sourcePath = resolve(process.cwd(), 'nebula-bundle.tmp.js')
+    const destinationPath = resolve(outputDirectory, configuration.output.name)
 
-    await writeFile(sourcePath, template)
+    await writeFile(sourcePath, bundle.template)
     await bundleCode(sourcePath, destinationPath)
     await rm(sourcePath)
 
-    if (configuration.deploy.configuration.r2 || configuration.deploy.configuration.kv) {
-      await writeFile(join(outputDirectory, configuration.output.dataName), serializedLyraInstance)
+    if (bundle.hasSeparateData) {
+      await writeFile(resolve(outputDirectory, configuration.output.dataName), serializedLyraInstance)
     }
 
     spinner.info(`Lyra is now bundled into \x1b[1m${relative(process.cwd(), destinationPath)}\x1b[0m`)

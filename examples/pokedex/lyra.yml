@@ -16,14 +16,35 @@ output:
   name: pokemon.js
   directory: tmp
 
-deploy:
-  platform: cloudflare
-  configuration:
-    workerName: pokedex
-
 # deploy:
 #   platform: aws-lambda
 #   configuration:
 #     function: pokedex
 #     repository: lyra/nebula-pokedex
 #     s3: lyra-nebula-pokedex
+
+# deploy:
+#   platform: google-cloud
+#   configuration:
+#     function: pokedex
+#     bucket: pokedex-1
+#     project: lyra-playground-1
+#     region: europe-west6
+#     separateDataObject: true
+
+# deploy:
+#   platform: azure
+#   configuration:
+#     application: pokedex-1
+#     function: lyra
+#     resourceGroup: $group
+#     storageAccount: $account
+#     region: westeurope
+#     # container: lyra-nebula-pokedex
+
+deploy:
+  platform: cloudflare
+  configuration:
+    workerName: pokedex
+    # r2: bucket
+    # kv: namespace

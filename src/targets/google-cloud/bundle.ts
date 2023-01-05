@@ -5,24 +5,17 @@ export async function bundle(
   configuration: V01Configuration,
   serializedLyraInstance: string | Buffer
 ): Promise<BundledLyra> {
-  const region = process.env.AWS_REGION
-  const bucket = configuration.deploy.configuration.s3
-
-  if (!region) {
-    throw new Error('Please provide AWS region in the AWS_REGION environment variable.')
-  }
-
   let template = await readFile(new URL('./template.js', import.meta.url), 'utf-8')
+  const { separateDataObject, bucket } = configuration.deploy.configuration
 
-  if (bucket) {
+  if (separateDataObject) {
     template = template
-      .replaceAll('__DATA_TYPE__', 'S3')
+      .replaceAll('__DATA_TYPE__', 'CloudStorage')
       .replaceAll('__DATA__', '{}')
-      .replaceAll('__REGION__', region)
       .replaceAll('__BUCKET__', bucket)
   } else {
     template = template.replace('__DATA_TYPE__', 'Embedded').replace('__DATA__', serializedLyraInstance as string)
   }
 
-  return { template, hasSeparateData: bucket }
+  return { template, hasSeparateData: separateDataObject }
 }

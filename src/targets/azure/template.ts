@@ -1,4 +1,12 @@
 import { create, load, Lyra, search, SearchParams, SearchResult } from '@lyrasearch/lyra'
+import type { Request } from 'express'
+import type { IncomingHttpHeaders } from 'node:http'
+
+interface Response {
+  status: number
+  headers: IncomingHttpHeaders
+  body: string
+}
 
 function parseNumber(raw: string | undefined, def: number, min: number): number {
   if (typeof raw !== 'string' || !raw.length) {
@@ -10,25 +18,31 @@ function parseNumber(raw: string | undefined, def: number, min: number): number 
   return isNaN(parsed) || parsed < min ? def : parsed
 }
 
-function createResponse(statusCode: number, data: unknown | undefined, error?: string): Response {
-  return new Response(JSON.stringify({ success: statusCode < 400, data, error }), {
-    status: statusCode,
-    headers: { 'content-type': 'application/json' }
-  })
+function createResponse(status: number, data: unknown | undefined, error?: string): Response {
+  return {
+    status,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ success: status < 400, data, error })
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function restoreKV(instance: Lyra<any>): Promise<void> {
-  // @ts-expect-error
-  load(instance, JSON.parse(await KV.get('data')))
-}
+async function restoreAzureStorageBlob(instance: Lyra<any>): Promise<void> {
+  try {
+    const url = new URL('__URL__')
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function restoreR2(instance: Lyra<any>): Promise<void> {
-  // @ts-expect-error
-  const data = await R2.get('data.json')
+    const response = await fetch(url)
 
-  load(instance, await data.json())
+    if (!response.ok) {
+      throw new Error(
+        `Fetching data from Azure Storage failed with HTTP error ${response.status}\n\n${await response.text()}`
+      )
+    }
+
+    load(instance, await response.json())
+  } catch (e) {
+    throw new Error(`Fetching blob from Azure Storage failed with error: ${e.message}`)
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -37,7 +51,7 @@ function restoreEmbedded(instance: Lyra<any>): void {
   load(instance, __DATA__)
 }
 
-async function handleSearch(request: Request): Promise<Response> {
+export async function lyraHandler(_: unknown, req: Request & { rawBody: string }): Promise<Response> {
   try {
     const lyra = create({
       schema: {
@@ -51,11 +65,15 @@ async function handleSearch(request: Request): Promise<Response> {
 
     let params: Record<string, any>
 
-    if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
-      params = Object.fromEntries(new URL(request.url).searchParams.entries())
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+      params = req.query ?? {}
     } else {
+      if (!req.headers['content-type']?.startsWith('application/json')) {
+        return createResponse(400, undefined, 'Malformed JSON request body.')
+      }
+
       try {
-        params = await request.json()
+        params = JSON.parse(req.rawBody)
       } catch {
         return createResponse(400, undefined, 'Malformed JSON request body.')
       }
@@ -79,5 +97,3 @@ async function handleSearch(request: Request): Promise<Response> {
     return createResponse(500, undefined, e.message)
   }
 }
-
-addEventListener('fetch', (event: any) => event.respondWith(handleSearch(event.request)))

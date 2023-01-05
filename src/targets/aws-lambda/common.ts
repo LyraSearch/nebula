@@ -69,7 +69,9 @@ export async function awsApiRequest(
     const response = data.length > 0 ? JSON.parse(data.toString('utf-8')) : ''
 
     if (statusCode >= 400) {
-      const error = new Error(`${errorPrefix} with HTTP error ${statusCode}\n\n${JSON.stringify(response, null, 2)}`)
+      const error = new Error(
+        `${errorPrefix} failed with HTTP error ${statusCode}\n\n${JSON.stringify(response, null, 2)}`
+      )
 
       Object.defineProperty(error, 'response', {
         value: response,
@@ -86,7 +88,7 @@ export async function awsApiRequest(
     const response = data.toString('utf-8')
 
     if (statusCode >= 400) {
-      const error = new Error(`${errorPrefix} with HTTP error ${statusCode}\n\n${response}`)
+      const error = new Error(`${errorPrefix} failed with HTTP error ${statusCode}\n\n${response}`)
 
       Object.defineProperty(error, 'response', {
         value: response,

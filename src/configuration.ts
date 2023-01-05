@@ -22,7 +22,7 @@ export type Sharding = 'auto' | number
 
 export type DataType = 'javascript' | 'json'
 
-export type Platform = 'cloudflare' | 'aws-lambda'
+export type Platform = 'cloudflare' | 'aws-lambda' | 'google-cloud' | 'azure'
 
 export interface Input {
   path: string
@@ -50,6 +50,11 @@ export interface V01Configuration {
   input: Input
   output: Output
   deploy: Deploy
+}
+
+export interface BundledLyra {
+  template: string
+  hasSeparateData: boolean
 }
 
 function validateV01Configuration(parsedConfig: YamlVersionPlaceholder): V01Configuration {
