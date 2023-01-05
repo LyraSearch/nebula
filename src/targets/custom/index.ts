@@ -1,6 +1,7 @@
+import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { Ora } from 'ora'
-import { BundledLyra, V01Configuration } from '../../configuration.js'
+import { BundledLyra, CustomDeploymentConfiguration, V01Configuration } from '../../configuration.js'
 import {
   CUSTOM_IMPLEMENTATION_NOT_FOUND,
   MISSING_CUSTOM_DEPLOYMENT_IMPLEMENTATION,
@@ -17,7 +18,7 @@ async function loadImplementation<T extends keyof CustomPlatform>(
   configuration: V01Configuration,
   fn: keyof CustomPlatform
 ): Promise<CustomPlatform[T]> {
-  const path = configuration.deploy.configuration.path
+  const path = (configuration.deploy.configuration as CustomDeploymentConfiguration).path
 
   if (!path) {
     throw new Error(MISSING_CUSTOM_DEPLOYMENT_PATH())
@@ -48,6 +49,18 @@ export async function bundle(
 ): Promise<BundledLyra> {
   const customBundle = await loadImplementation<'bundle'>(configuration, 'bundle')
   return customBundle(configuration, serializedLyraInstance)
+}
+
+export async function bundleStandalone(
+  configuration: V01Configuration,
+  serializedLyraInstance: string | Buffer
+): Promise<BundledLyra> {
+  const template = await readFile(new URL('./template-standalone.js', import.meta.url), 'utf-8')
+
+  return {
+    template: template.replaceAll('__DATA__', serializedLyraInstance as string),
+    hasSeparateData: false
+  }
 }
 
 export async function deploy(

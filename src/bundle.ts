@@ -146,24 +146,28 @@ export async function bundle(this: Command, rawYmlPath: string, _args: Record<st
 
     let bundle: BundledLyra
 
-    switch (configuration.deploy.platform) {
-      case 'cloudflare':
-        bundle = await cloudflare.bundle(configuration, serializedLyraInstance)
-        break
-      case 'aws-lambda':
-        bundle = await aws.bundle(configuration, serializedLyraInstance)
-        break
-      case 'google-cloud':
-        bundle = await gcp.bundle(configuration, serializedLyraInstance)
-        break
-      case 'azure':
-        bundle = await azure.bundle(configuration, serializedLyraInstance)
-        break
-      case 'custom':
-        bundle = await custom.bundle(configuration, serializedLyraInstance)
-        break
-      default:
-        throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
+    if (configuration.deploy.platform) {
+      switch (configuration.deploy.platform) {
+        case 'cloudflare':
+          bundle = await cloudflare.bundle(configuration, serializedLyraInstance)
+          break
+        case 'aws-lambda':
+          bundle = await aws.bundle(configuration, serializedLyraInstance)
+          break
+        case 'google-cloud':
+          bundle = await gcp.bundle(configuration, serializedLyraInstance)
+          break
+        case 'azure':
+          bundle = await azure.bundle(configuration, serializedLyraInstance)
+          break
+        case 'custom':
+          bundle = await custom.bundle(configuration, serializedLyraInstance)
+          break
+        default:
+          throw new Error(UNSUPPORTED_PLATFORM(configuration.deploy.platform))
+      }
+    } else {
+      bundle = await custom.bundleStandalone(configuration, serializedLyraInstance)
     }
 
     const destinationPath = resolve(outputDirectory, configuration.output.name)

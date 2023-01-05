@@ -41,6 +41,7 @@ export interface AwsLambdaDeploymentConfiguration {
   function: string
   repository: string
   s3?: string
+  cors?: Record<string, boolean | number | string[]>
 }
 
 export interface GoogleCloudDeploymentConfiguration {
@@ -62,6 +63,7 @@ export interface AzureDeploymentConfiguration {
 
 export interface CloudflareDeploymentConfiguration {
   workerName: string
+  useWorkerDomain?: boolean
   r2?: string
   kv?: string
 }
@@ -114,7 +116,7 @@ function validateV01Configuration(parsedConfig: YamlVersionPlaceholder): V01Conf
   configuration.output = { directory: '.', name: 'lyra-bundle.js', dataName: 'data.json', ...configuration.output }
 
   // @ts-expect-error:2783
-  configuration.deploy = { platform: 'cloudflare', ...configuration.deploy }
+  configuration.deploy = { platform: '', ...configuration.deploy }
 
   return configuration
 }

@@ -1,5 +1,5 @@
 import { Ora } from 'ora'
-import { V01Configuration } from '../../configuration.js'
+import { CloudflareDeploymentConfiguration, V01Configuration } from '../../configuration.js'
 import { cloudFlareRequest } from './common.js'
 import { deleteKVNamespace } from './kv.js'
 import { deleteR2Bucket } from './r2.js'
@@ -30,7 +30,11 @@ export async function undeploy(spinner: Ora, configuration: V01Configuration): P
   const account = process.env.CLOUDFLARE_ACCOUNT
   const apiToken = process.env.CLOUDFLARE_API_TOKEN
 
-  const { workerName, r2: r2Bucket, kv: kvNamespace } = configuration.deploy.configuration
+  const {
+    workerName,
+    r2: r2Bucket,
+    kv: kvNamespace
+  } = configuration.deploy.configuration as CloudflareDeploymentConfiguration
 
   if (!account || !apiToken) {
     throw new Error(

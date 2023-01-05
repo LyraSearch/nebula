@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { Ora } from 'ora'
-import { V01Configuration } from '../../configuration.js'
+import { GoogleCloudDeploymentConfiguration, V01Configuration } from '../../configuration.js'
 import { getFunctionInformation, googleRequest, refreshApiToken } from './common.js'
 
 function functionConfiguration(bucket: string): object {
@@ -260,7 +260,13 @@ export async function deploy(
 
   const apiToken = await refreshApiToken(spinner)
 
-  const { function: name, project, region, bucket, separateDataObject } = configuration.deploy.configuration
+  const {
+    function: name,
+    project,
+    region,
+    bucket,
+    separateDataObject
+  } = configuration.deploy.configuration as GoogleCloudDeploymentConfiguration
 
   await ensureStorageBucket(spinner, apiToken, bucket, project, region)
 

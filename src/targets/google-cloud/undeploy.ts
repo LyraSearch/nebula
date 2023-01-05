@@ -1,6 +1,6 @@
 import { basename } from 'node:path'
 import { Ora } from 'ora'
-import { V01Configuration } from '../../configuration.js'
+import { GoogleCloudDeploymentConfiguration, V01Configuration } from '../../configuration.js'
 import { getFunctionInformation, googleRequest, refreshApiToken } from './common.js'
 
 async function deleteFunction(
@@ -112,7 +112,13 @@ async function deleteStorageBucket(spinner: Ora, apiToken: string, name: string,
 export async function undeploy(spinner: Ora, configuration: V01Configuration): Promise<void> {
   const apiToken = await refreshApiToken(spinner)
 
-  const { function: name, project, region, bucket, separateDataObject } = configuration.deploy.configuration
+  const {
+    function: name,
+    project,
+    region,
+    bucket,
+    separateDataObject
+  } = configuration.deploy.configuration as GoogleCloudDeploymentConfiguration
 
   const info = await getFunctionInformation(spinner, apiToken, name, project, region, true)
 
